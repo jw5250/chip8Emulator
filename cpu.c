@@ -179,18 +179,21 @@ void xor(int reg1, int reg2){
 	cpu.reg[reg1] ^= cpu.reg[reg2];
 }
 //8XYE
+//Shift left contents in a register by 1
 void lsh(int reg1){
 	cpu.reg[0xf] = ((cpu.reg[reg1] & 0x8000) != 0);
 	cpu.reg[reg1] <<= 1;
 }
 //8XY6
+//Shift right contents in a register by 1
 void rsh(int reg1){
 	cpu.reg[0xf] = cpu.reg[reg1] & 0x0001;
 	cpu.reg[reg1] >>= 1;
 }
 //1NNN
 void jmp(word nextInstr){
-	printf("Jumping\n");
+	//Debug message below.
+	//printf("Jumping\n");
 	cpu.pc.WORD = nextInstr.WORD & 0x0FFF;
 }
 //BNNN
