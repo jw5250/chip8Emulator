@@ -53,9 +53,6 @@ inline void load(int reg1, byte b1);
 
 inline void randomFunction(int reg1, byte b1);
 
-
-
-//Currently untested.
 inline void bcdEncode(int reg1);
 inline void draw(int regX, int regY, int nBytes);
 
