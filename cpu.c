@@ -11,8 +11,7 @@
 #define STARTADDR 0x0200
 #define STACKSIZE 48
 #define STACKADDR 0x0
-//If I don't set all of the functions not in cpu.h to "static inline" mac linker throws an error. Why?
-//If I use "inline void" instead of "void" or "static inline void" on function it becomes an undefined symbol. Why?
+//inline:Larger executable, but functions declared with it don't need to be pushed onto the stack and popped (alongside result).
 //I could rewrite the giant if else statement into a jump table. Is it worth it though?
 
 //Writing the actual "hardware":
@@ -48,10 +47,11 @@ static inline void or(int reg1, int reg2){
 static inline void and(int reg1, int reg2){
 	cpu.reg[reg1] &= cpu.reg[reg2];
 }
+
 //8XY4
 //Handles carry flags
 static inline void addCarry(int reg1, int reg2){
-	cpu.reg[0xf] = (!(cpu.reg[reg1])) < cpu.reg[reg2];
+	cpu.reg[0xf] = (~(cpu.reg[reg1])) < cpu.reg[reg2];
 	
 	//printf("Registers:%d, %d\n", reg1, reg2);
 	cpu.reg[reg1] += cpu.reg[reg2];
@@ -164,11 +164,15 @@ static inline void draw(int regX, int regY, int nBytes){
 		byte b = readMemory(cpu.i.WORD + i);
 		while(j < BYTE_LEN_IN_BITS){
 		 	bool collisionOccured = false;
+			//Start of untested code
+			unsigned short hor = (cpu.reg[regX] + j) % SCRNLEN;
+			unsigned short ver = (cpu.reg[regY] + i) % SCRNHEIGHT;
 			if( (b & bitMasks[j]) != 0){
-				collisionOccured = updatePixelInFrameBuffer(cpu.reg[regX] + j, cpu.reg[regY] + i, true);
+				collisionOccured = updatePixelInFrameBuffer(hor, ver, true);
 			}else{
-				collisionOccured = updatePixelInFrameBuffer(cpu.reg[regX] + j, cpu.reg[regY] + i, false);
+				collisionOccured = updatePixelInFrameBuffer(hor, ver, false);
 			}
+			//End of untested code
 			if(collisionOccured == true){
 				//printf("Collision!\n");
 				collisionOccuredAtSomeTime = true;
@@ -245,10 +249,13 @@ void cpuLoop(){
 	unsigned short opcode = currentInstruction.WORD & 0xF000;
 	opcode >>= 12;//three nibbles
 	//Decode
-	
+	//Issue:
 	unsigned short firstNibble = (currentInstruction.WORD & 0x0F00);
 	unsigned short secondNibble = (currentInstruction.WORD & 0x00F0);
 	unsigned short thirdNibble = (currentInstruction.WORD & 0x000F);
+
+
+
 	if(opcode == 0){
 		//call machine code routine
 		//clear screen
@@ -327,25 +334,17 @@ void cpuLoop(){
 	}else if(opcode == 0xD){
 		draw(firstNibble >> 8, secondNibble >> 4, thirdNibble);
 	}else if(opcode == 0xE){
-		//Missing:
-			//Skip instruction after if key is pressed (EX9E	)
-			//Skip instruction if key isn't pressed (EXA1)
 	}else if(opcode == 0xF){
-		//Missing:
-			//Await key press and store in vX (FX0A)
-			//Timer instructions (FX07, FX15)
-			//Sound instructions (FX18)
-			//Location of sprite for digit in vx (FX29)	
-				//Requires I preemptively store font data in a given location.
-		if( (secondNibble | thirdNibble) == 0x0033 ){
+		if( currentInstruction.BYTE.LOWER == 0x33 ){
 			bcdEncode( (firstNibble >> 8) );
-		}else if( (secondNibble | thirdNibble) == 0x001E ){
+		}else if( currentInstruction.BYTE.LOWER == 0x1E ){
 			addIndex( (firstNibble >> 8) );
-		}else if( (secondNibble | thirdNibble) == 0x0029 ){
-		
-		}else if( (secondNibble | thirdNibble) == 0x0055 ){
+		}else if( currentInstruction.BYTE.LOWER == 0x29 ){
+			//Requires that on startup, digit fonts are already placed where they should be.
+		}else if( currentInstruction.BYTE.LOWER == 0x55 ){
 			dumpReg( (firstNibble >> 8) );
-		}else if( (secondNibble | thirdNibble) == 0x0065 ){
+		}else if( currentInstruction.BYTE.LOWER == 0x65 ){
+			printf("Loading registers\n");
 			loadReg( (firstNibble >> 8) );
 		}
 	}else{

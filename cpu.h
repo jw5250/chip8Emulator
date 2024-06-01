@@ -1,6 +1,10 @@
 #ifndef CPU_H_INCLUDED
 #define CPU_H_INCLUDED
 #include "dataType.h"
+
+//Current problems:
+	//Supposedly a big-endian machine, but use of WORD doesn't make the CPU loop independent of endianness. Fix!
+
 //0x0200 is 512 in decimal.
 #define STARTADDR 0x0200
 typedef struct{
