@@ -11,6 +11,8 @@
 #define STARTADDR 0x0200
 #define STACKSIZE 48
 #define STACKADDR 0x0
+//If I don't set all of the functions not in cpu.h to "static inline" mac linker throws an error. Why?
+//If I use "inline void" instead of "void" or "static inline void" on function it becomes an undefined symbol. Why?
 //I could rewrite the giant if else statement into a jump table. Is it worth it though?
 
 //Writing the actual "hardware":
@@ -25,6 +27,209 @@ void initCpu(){
 	//Stack size is 96 bytes long. Up to 48 levels of function calls
 	//According to my sources its actually half that but I want to try this first.
 	cpu.sp = 0;
+}
+
+
+
+//7XNN
+static inline void addReg(int reg1, byte b1){
+	cpu.reg[reg1] += b1;
+}
+//8XY5
+static inline void subCarry(int reg1, int reg2){
+	cpu.reg[0xf] = (cpu.reg[reg1] > cpu.reg[reg2]);
+	cpu.reg[reg1] -= cpu.reg[reg2];
+}
+//8XY1
+static inline void or(int reg1, int reg2){
+	cpu.reg[reg1] |= cpu.reg[reg2];
+}
+//8XY2
+static inline void and(int reg1, int reg2){
+	cpu.reg[reg1] &= cpu.reg[reg2];
+}
+//8XY4
+//Handles carry flags
+static inline void addCarry(int reg1, int reg2){
+	cpu.reg[0xf] = (!(cpu.reg[reg1])) < cpu.reg[reg2];
+	
+	//printf("Registers:%d, %d\n", reg1, reg2);
+	cpu.reg[reg1] += cpu.reg[reg2];
+}
+//8XY3
+static inline void xor(int reg1, int reg2){
+	cpu.reg[reg1] ^= cpu.reg[reg2];
+}
+//8XYE
+//Shift left contents in a register by 1
+static inline void lsh(int reg1){
+	cpu.reg[0xf] = ((cpu.reg[reg1] & 0x8000) != 0);
+	cpu.reg[reg1] <<= 1;
+}
+//8XY6
+//Shift right contents in a register by 1
+static inline void rsh(int reg1){
+	cpu.reg[0xf] = cpu.reg[reg1] & 0x0001;
+	cpu.reg[reg1] >>= 1;
+}
+//1NNN
+static inline void jmp(word nextInstr){
+	//Debug message below.
+	//printf("Jumping\n");
+	cpu.pc.WORD = nextInstr.WORD & 0x0fff;
+}
+//BNNN
+static inline void jmpOff(word w1){
+	cpu.pc.WORD = cpu.reg[0x0] + (w1.WORD & 0x0fff);
+}
+//ANNN
+static inline void setIndex(word w1){
+	//printf("set index:");
+	cpu.i.WORD = w1.WORD & (0x0fff);
+}
+
+
+//FX1E
+static inline void addIndex(int reg1){
+	cpu.i.WORD += cpu.reg[reg1];
+}
+
+//FX29
+static inline void getIndexLocation(int reg1){
+	//Gets font data
+	//If reg1 contains 1, i is set to the start address of the sprite of '1,' etc..
+	//Requires font data existing for this particular sprite.
+}
+
+
+//CXNN
+static inline void randomFunction(int reg1, byte b1){
+	//Maybe in future I'll set seed to be more random (seed it based on time.).
+	cpu.reg[reg1] = rand() & b1;
+}
+
+//3XNN, 5XY0, X, Y is a register
+//For registers AND immediate values.
+static inline void beq(byte b1, byte b2){
+	if(b1 == b2){
+		cpu.pc.WORD += WORD_LEN;
+	}
+}
+
+//4XNN
+static inline void bne(byte b1, byte b2){
+	//printf("Not equal:%d, %d\n", b1, b2);
+	if(b1 != b2){
+		cpu.pc.WORD += WORD_LEN;
+	}
+}
+
+
+//6XNN
+static inline void load(int reg1, byte b1){
+	//printf("Register and byte:%d, %d\n", reg1, b1);
+	cpu.reg[reg1] = b1;
+}
+
+//For storing a decimal number as a set of binary digits at address I.
+/*
+i:hundred
+i+1:tens
+i+2:ones
+//FX33
+*/
+static inline void bcdEncode(int reg1){
+	byte buffer = (byte)(cpu.reg[reg1]);
+	writeMemory( cpu.i, buffer/100 );
+	buffer = cpu.reg[reg1] % 100;
+	
+	word iRegStore = cpu.i;
+
+	iRegStore.WORD = cpu.i.WORD + 1;
+
+	writeMemory( iRegStore, buffer/10 );
+	buffer = cpu.reg[reg1] % 10;
+
+	iRegStore.WORD = cpu.i.WORD + 2;
+	writeMemory( iRegStore, buffer );
+}
+
+//DXYN
+static inline void draw(int regX, int regY, int nBytes){
+	int i = 0;
+	byte bitMasks[BYTE_LEN_IN_BITS] = {128, 64, 32, 16, 8, 4, 2, 1};
+	bool collisionOccuredAtSomeTime = false;
+	while(i < nBytes){
+		int j = 0;
+		byte b = readMemory(cpu.i.WORD + i);
+		while(j < BYTE_LEN_IN_BITS){
+		 	bool collisionOccured = false;
+			if( (b & bitMasks[j]) != 0){
+				collisionOccured = updatePixelInFrameBuffer(cpu.reg[regX] + j, cpu.reg[regY] + i, true);
+			}else{
+				collisionOccured = updatePixelInFrameBuffer(cpu.reg[regX] + j, cpu.reg[regY] + i, false);
+			}
+			if(collisionOccured == true){
+				//printf("Collision!\n");
+				collisionOccuredAtSomeTime = true;
+			}
+			j++;
+		}
+		i++;
+	}
+	cpu.reg[0xF] = collisionOccuredAtSomeTime;
+}
+
+//FX55
+//Dump all register values into memory(0 to X), starting from address i. (corresponding to starting with reg 0)
+static inline void dumpReg(int reg1){
+	word addrBuffer;
+	addrBuffer.WORD = cpu.i.WORD;
+	for(int j = 0; j <= reg1;j++){
+		writeMemory(addrBuffer, cpu.reg[j]);
+		addrBuffer.WORD++;
+	}
+}
+
+
+//FX65
+//Load all register values from memory(0 to X), starting from address i. (corresponding to starting with reg 0).
+static inline void loadReg(int reg1){
+	word addrBuffer;
+	addrBuffer.WORD = cpu.i.WORD;
+	for(int j = 0; j <= reg1;j++){
+		cpu.reg[j] = readMemory(addrBuffer.WORD);
+		addrBuffer.WORD++;
+	}
+}
+
+//Functions below correspond to the instructions with opcode 8.
+static inline void bitWiseOperations(int reg1, int reg2, int id){
+	if(id == 1){
+		or(reg1, reg2);
+	}else if(id == 2){
+		and(reg1, reg2);
+	}else if(id == 3){
+		xor(reg1, reg2);
+	}
+}
+
+static inline void arithmeticOperations(int reg1, int reg2, int id){
+	if(id == 4){
+		addCarry(reg1, reg2);
+	}else if(id == 5){
+		subCarry(reg1, reg2);
+	}else if(id == 7){
+		subCarry(reg2, reg1);
+	}
+}
+
+static inline void shiftOperations(int reg1, int id){
+	if(id == 6){
+		rsh(reg1);
+	}else if(id == 0xE){
+		lsh(reg1);
+	}
 }
 
 void cpuLoop(){
@@ -122,229 +327,33 @@ void cpuLoop(){
 	}else if(opcode == 0xD){
 		draw(firstNibble >> 8, secondNibble >> 4, thirdNibble);
 	}else if(opcode == 0xE){
-		
+		//Missing:
+			//Skip instruction after if key is pressed (EX9E	)
+			//Skip instruction if key isn't pressed (EXA1)
 	}else if(opcode == 0xF){
 		//Missing:
+			//Await key press and store in vX (FX0A)
 			//Timer instructions (FX07, FX15)
 			//Sound instructions (FX18)
-			//Register dump functions (FX55)
-			//Register load functions (FX65)
-			//Location of sprite for digit vx (FX29)
+			//Location of sprite for digit in vx (FX29)	
+				//Requires I preemptively store font data in a given location.
 		if( (secondNibble | thirdNibble) == 0x0033 ){
 			bcdEncode( (firstNibble >> 8) );
 		}else if( (secondNibble | thirdNibble) == 0x001E ){
 			addIndex( (firstNibble >> 8) );
 		}else if( (secondNibble | thirdNibble) == 0x0029 ){
 		
+		}else if( (secondNibble | thirdNibble) == 0x0055 ){
+			dumpReg( (firstNibble >> 8) );
+		}else if( (secondNibble | thirdNibble) == 0x0065 ){
+			loadReg( (firstNibble >> 8) );
 		}
 	}else{
 		fprintf(stdout, "Uh oh\n");
 	}
 }
-//Functions below correspond to the instructions with opcode 8.
-void bitWiseOperations(int reg1, int reg2, int id){
-	if(id == 1){
-		or(reg1, reg2);
-	}else if(id == 2){
-		and(reg1, reg2);
-	}else if(id == 3){
-		xor(reg1, reg2);
-	}
-}
-
-void arithmeticOperations(int reg1, int reg2, int id){
-	if(id == 4){
-		addCarry(reg1, reg2);
-	}else if(id == 5){
-		subCarry(reg1, reg2);
-	}else if(id == 7){
-		subCarry(reg2, reg1);
-	}
-}
-void shiftOperations(int reg1, int id){
-	if(id == 6){
-		rsh(reg1);
-	}else if(id == 0xE){
-		lsh(reg1);
-	}
-}
-
-//7XNN
-void addReg(int reg1, byte b1){
-	cpu.reg[reg1] += b1;
-}
-//8XY5
-void subCarry(int reg1, int reg2){
-	cpu.reg[0xf] = (cpu.reg[reg1] > cpu.reg[reg2]);
-	cpu.reg[reg1] -= cpu.reg[reg2];
-}
-//8XY1
-void or(int reg1, int reg2){
-	cpu.reg[reg1] |= cpu.reg[reg2];
-}
-//8XY2
-void and(int reg1, int reg2){
-	cpu.reg[reg1] &= cpu.reg[reg2];
-}
-//8XY4
-//Handles carry flags
-void addCarry(int reg1, int reg2){
-	cpu.reg[0xf] = (!(cpu.reg[reg1])) < cpu.reg[reg2];
-	
-	//printf("Registers:%d, %d\n", reg1, reg2);
-	cpu.reg[reg1] += cpu.reg[reg2];
-}
-//8XY3
-void xor(int reg1, int reg2){
-	cpu.reg[reg1] ^= cpu.reg[reg2];
-}
-//8XYE
-//Shift left contents in a register by 1
-void lsh(int reg1){
-	cpu.reg[0xf] = ((cpu.reg[reg1] & 0x8000) != 0);
-	cpu.reg[reg1] <<= 1;
-}
-//8XY6
-//Shift right contents in a register by 1
-void rsh(int reg1){
-	cpu.reg[0xf] = cpu.reg[reg1] & 0x0001;
-	cpu.reg[reg1] >>= 1;
-}
-//1NNN
-void jmp(word nextInstr){
-	//Debug message below.
-	//printf("Jumping\n");
-	cpu.pc.WORD = nextInstr.WORD & 0x0fff;
-}
-//BNNN
-void jmpOff(word w1){
-	cpu.pc.WORD = cpu.reg[0x0] + (w1.WORD & 0x0fff);
-}
-//ANNN
-void setIndex(word w1){
-	//printf("set index:");
-	cpu.i.WORD = w1.WORD & (0x0fff);
-}
-//
-
-//FX1E
-void addIndex(int reg1){
-	cpu.i.WORD += cpu.reg[reg1];
-}
-
-//FX29
-void getIndexLocation(int reg1){
-	//Gets font data
-	//If reg1 contains 1, i is set to the start address of the sprite of '1,' etc..
-	//Requires font data existing for this particular sprite.
-}
 
 
-//CXNN
-void randomFunction(int reg1, byte b1){
-	//Maybe in future I'll set seed to be more random (seed it based on time.).
-	cpu.reg[reg1] = rand() & b1;
-}
-
-//3XNN, 5XY0, X, Y is a register
-//For registers AND immediate values.
-void beq(byte b1, byte b2){
-	if(b1 == b2){
-		cpu.pc.WORD += WORD_LEN;
-	}
-}
-
-//4XNN
-void bne(byte b1, byte b2){
-	//printf("Not equal:%d, %d\n", b1, b2);
-	if(b1 != b2){
-		cpu.pc.WORD += WORD_LEN;
-	}
-}
-
-
-//For registers and immediate values.
-//6XNN
-void load(int reg1, byte b1){
-	//printf("Register and byte:%d, %d\n", reg1, b1);
-	cpu.reg[reg1] = b1;
-}
-
-//For storing a decimal number as a set of binary digits at address I.
-/*
-i:hundred
-i+1:tens
-i+2:ones
-
-//FX33
-*/
-void bcdEncode(int reg1){
-	byte buffer = (byte)(cpu.reg[reg1]);
-	writeMemory( cpu.i, buffer/100 );
-	buffer = cpu.reg[reg1] % 100;
-	
-	word iRegStore = cpu.i;
-
-	iRegStore.WORD = cpu.i.WORD + 1;
-
-	writeMemory( iRegStore, buffer/10 );
-	buffer = cpu.reg[reg1] % 10;
-
-	iRegStore.WORD = cpu.i.WORD + 2;
-	writeMemory( iRegStore, buffer );
-
-}
-//Draw sprite stored at address I at coordinates (VX, VY) that is N pixels tall and 8 pixels wide.
-//DXYN
-void draw(int regX, int regY, int nBytes){
-	printf("Called draw.");
-	int i = 0;
-	byte bitMasks[BYTE_LEN_IN_BITS] = {128, 64, 32, 16, 8, 4, 2, 1};
-	bool collisionOccuredAtSomeTime = false;
-	while(i < nBytes){
-		int j = 0;
-		byte b = readMemory(cpu.i.WORD + i);
-		while(j < BYTE_LEN_IN_BITS){
-		 	bool collisionOccured = false;
-			if( (b & bitMasks[j]) != 0){
-				collisionOccured = updatePixelInFrameBuffer(cpu.reg[regX] + j, cpu.reg[regY] + i, true);
-			}else{
-				collisionOccured = updatePixelInFrameBuffer(cpu.reg[regX] + j, cpu.reg[regY] + i, false);
-			}
-			if(collisionOccured == true){
-				printf("Collision!\n");
-				collisionOccuredAtSomeTime = true;
-			}
-			j++;
-		}
-		i++;
-	}
-	//reg[0xF] could have been set to some other value outside of 1 or 0.
-	cpu.reg[0xF] = collisionOccuredAtSomeTime;
-}
-
-//FX55
-//Dump all register values into memory(0 to X), starting from address i. (corresponding to starting with reg 0)
-void dumpReg(int reg1){
-	word addrBuffer;
-	addrBuffer.WORD = cpu.i.WORD;
-	for(int j = 0; j <= reg1;j++){
-		writeMemory(addrBuffer, cpu.reg[j]);
-		addrBuffer.WORD++;
-	}
-}
-
-
-//FX65
-//Load all register values from memory(0 to X), starting from address i. (corresponding to starting with reg 0).
-void loadReg(int reg1){
-	word addrBuffer;
-	addrBuffer.WORD = cpu.i.WORD;
-	for(int j = 0; j <= reg1;j++){
-		cpu.reg[j] = readMemory(addrBuffer.WORD);
-		addrBuffer.WORD++;
-	}
-}
 
 
 #endif
