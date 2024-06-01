@@ -6,9 +6,10 @@
 //4096 bytes of memory (available addresses)
 //Bytes are 8 bit
 //Interpreter occupies first 512 bytes of memory
+    //Font data (0-F sprites) usually stored in start of memory.
 //Upper 256 for display refresh
 //96 lower bytes for other usage (call stack, etc.)
-byte* memory;
+
 
 int initMemory();
 byte readMemory(register int address);
