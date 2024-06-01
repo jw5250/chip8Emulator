@@ -1,19 +1,21 @@
 #ifndef CPU_C_INCLUDED
 #define CPU_C_INCLUDED
 #define WORD_LEN 2
+#define BYTE_LEN_IN_BITS 8
 #include "cpu.h"
 #include "memory.h"
+#include "screen.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #define STARTADDR 0x0200
 #define STACKSIZE 48
 #define STACKADDR 0x0
-//I could rewrite the giant if else statement into a jump table. Is it worth it?
+//I could rewrite the giant if else statement into a jump table. Is it worth it though?
 
 //Writing the actual "hardware":
 	//Store the actual interpreter in the memory
 	//Needed instructions:
-	//Fix add carry.
 	//draw functions
 	//key operations
 	//delay and timer functions
@@ -46,13 +48,18 @@ void cpuLoop(){
 		//call machine code routine
 		//clear screen
 		//return from a subroutine (set to address on stack)
+		//Stack grows down from ROM load point. Is this a bad idea?
 		if( ((firstNibble | secondNibble) | thirdNibble) == 0x00EE){
 			word stackLoc;
-			printf("Returning\n");	
-			cpu.sp -=1;
+			//printf("Returning\n");	
+			cpu.sp -= 1;
 			cpu.pc.BYTE.LOWER = readMemory(STACKADDR + cpu.sp);
 			cpu.sp -= 1;
 			cpu.pc.BYTE.UPPER = readMemory(STACKADDR + cpu.sp);
+		//Clear the screen.
+		} else if( ((firstNibble | secondNibble) | thirdNibble) == 0x00E0 ){
+			//Calls the screen refreshing routine.
+			 clearScreen();
 		}
 	}else if(opcode == 1){
 		//jump to address NNN
@@ -65,6 +72,7 @@ void cpuLoop(){
 		word stackLoc;
 		stackLoc.WORD = STACKADDR + cpu.sp;
 		address.WORD = ((firstNibble | secondNibble) | thirdNibble);
+		
 		writeMemory(stackLoc, cpu.pc.BYTE.UPPER);
 		stackLoc.WORD += 1;
 		writeMemory(stackLoc, cpu.pc.BYTE.LOWER);
@@ -101,22 +109,34 @@ void cpuLoop(){
 		if(thirdNibble == 0){
 			bne( cpu.reg[firstNibble >> 8],cpu.reg[secondNibble >> 4] );
 		}	
-	}else if(opcode == 10){
+	}else if(opcode == 0xA){
 		word address;
 		address.WORD = ((firstNibble | secondNibble) | thirdNibble);
 		setIndex( address );
-	}else if(opcode == 11){
+	}else if(opcode == 0xB){
 		word address;
 		address.WORD = ((firstNibble | secondNibble) | thirdNibble);
 		jmpOff( address );
-	}else if(opcode == 12){
+	}else if(opcode == 0xC){
 		randomFunction(firstNibble >> 8, (secondNibble | thirdNibble));
-	}else if(opcode == 13){
+	}else if(opcode == 0xD){
+		draw(firstNibble >> 8, secondNibble >> 4, thirdNibble);
+	}else if(opcode == 0xE){
 		
-	}else if(opcode == 14){
+	}else if(opcode == 0xF){
+		//Missing:
+			//Timer instructions (FX07, FX15)
+			//Sound instructions (FX18)
+			//Register dump functions (FX55)
+			//Register load functions (FX65)
+			//Location of sprite for digit vx (FX29)
+		if( (secondNibble | thirdNibble) == 0x0033 ){
+			bcdEncode( (firstNibble >> 8) );
+		}else if( (secondNibble | thirdNibble) == 0x001E ){
+			addIndex( (firstNibble >> 8) );
+		}else if( (secondNibble | thirdNibble) == 0x0029 ){
 		
-	}else if(opcode == 15){
-		
+		}
 	}else{
 		fprintf(stdout, "Uh oh\n");
 	}
@@ -194,7 +214,7 @@ void rsh(int reg1){
 void jmp(word nextInstr){
 	//Debug message below.
 	//printf("Jumping\n");
-	cpu.pc.WORD = nextInstr.WORD & 0x0FFF;
+	cpu.pc.WORD = nextInstr.WORD & 0x0fff;
 }
 //BNNN
 void jmpOff(word w1){
@@ -202,16 +222,27 @@ void jmpOff(word w1){
 }
 //ANNN
 void setIndex(word w1){
+	//printf("set index:");
 	cpu.i.WORD = w1.WORD & (0x0fff);
 }
+//
 
 //FX1E
 void addIndex(int reg1){
 	cpu.i.WORD += cpu.reg[reg1];
 }
 
+//FX29
+void getIndexLocation(int reg1){
+	//Gets font data
+	//If reg1 contains 1, i is set to the start address of the sprite of '1,' etc..
+	//Requires font data existing for this particular sprite.
+}
+
+
 //CXNN
 void randomFunction(int reg1, byte b1){
+	//Maybe in future I'll set seed to be more random (seed it based on time.).
 	cpu.reg[reg1] = rand() & b1;
 }
 
@@ -222,19 +253,98 @@ void beq(byte b1, byte b2){
 		cpu.pc.WORD += WORD_LEN;
 	}
 }
+
 //4XNN
 void bne(byte b1, byte b2){
-	printf("Not equal:%d, %d\n", b1, b2);
+	//printf("Not equal:%d, %d\n", b1, b2);
 	if(b1 != b2){
 		cpu.pc.WORD += WORD_LEN;
 	}
 }
-//
+
 
 //For registers and immediate values.
 //6XNN
 void load(int reg1, byte b1){
-	printf("Register and byte:%d, %d\n", reg1, b1);
+	//printf("Register and byte:%d, %d\n", reg1, b1);
 	cpu.reg[reg1] = b1;
 }
+
+//For storing a decimal number as a set of binary digits at address I.
+/*
+i:hundred
+i+1:tens
+i+2:ones
+
+//FX33
+*/
+void bcdEncode(int reg1){
+	byte buffer = (byte)(cpu.reg[reg1]);
+	writeMemory( cpu.i, buffer/100 );
+	buffer = cpu.reg[reg1] % 100;
+	
+	word iRegStore = cpu.i;
+
+	iRegStore.WORD = cpu.i.WORD + 1;
+
+	writeMemory( iRegStore, buffer/10 );
+	buffer = cpu.reg[reg1] % 10;
+
+	iRegStore.WORD = cpu.i.WORD + 2;
+	writeMemory( iRegStore, buffer );
+
+}
+//Draw sprite stored at address I at coordinates (VX, VY) that is N pixels tall and 8 pixels wide.
+//DXYN
+void draw(int regX, int regY, int nBytes){
+	printf("Called draw.");
+	int i = 0;
+	byte bitMasks[BYTE_LEN_IN_BITS] = {128, 64, 32, 16, 8, 4, 2, 1};
+	bool collisionOccuredAtSomeTime = false;
+	while(i < nBytes){
+		int j = 0;
+		byte b = readMemory(cpu.i.WORD + i);
+		while(j < BYTE_LEN_IN_BITS){
+		 	bool collisionOccured = false;
+			if( (b & bitMasks[j]) != 0){
+				collisionOccured = updatePixelInFrameBuffer(cpu.reg[regX] + j, cpu.reg[regY] + i, true);
+			}else{
+				collisionOccured = updatePixelInFrameBuffer(cpu.reg[regX] + j, cpu.reg[regY] + i, false);
+			}
+			if(collisionOccured == true){
+				printf("Collision!\n");
+				collisionOccuredAtSomeTime = true;
+			}
+			j++;
+		}
+		i++;
+	}
+	//reg[0xF] could have been set to some other value outside of 1 or 0.
+	cpu.reg[0xF] = collisionOccuredAtSomeTime;
+}
+
+//FX55
+//Dump all register values into memory(0 to X), starting from address i. (corresponding to starting with reg 0)
+void dumpReg(int reg1){
+	word addrBuffer;
+	addrBuffer.WORD = cpu.i.WORD;
+	for(int j = 0; j <= reg1;j++){
+		writeMemory(addrBuffer, cpu.reg[j]);
+		addrBuffer.WORD++;
+	}
+}
+
+
+//FX65
+//Load all register values from memory(0 to X), starting from address i. (corresponding to starting with reg 0).
+void loadReg(int reg1){
+	word addrBuffer;
+	addrBuffer.WORD = cpu.i.WORD;
+	for(int j = 0; j <= reg1;j++){
+		cpu.reg[j] = readMemory(addrBuffer.WORD);
+		addrBuffer.WORD++;
+	}
+}
+
+
 #endif

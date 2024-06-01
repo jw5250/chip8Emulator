@@ -1,6 +1,7 @@
 #ifndef CPU_H_INCLUDED
 #define CPU_H_INCLUDED
 #include "dataType.h"
+//0x0200 is 512 in decimal.
 #define STARTADDR 0x0200
 typedef struct{
 	//Registers
@@ -51,4 +52,11 @@ inline void bne(byte b1, byte b2);
 inline void load(int reg1, byte b1);
 
 inline void randomFunction(int reg1, byte b1);
+
+
+
+//Currently untested.
+inline void bcdEncode(int reg1);
+inline void draw(int regX, int regY, int nBytes);
+
 #endif

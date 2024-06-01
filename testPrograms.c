@@ -53,6 +53,46 @@ void testFetchDecodeExecute(){
 
 }
 
+//Writes 239 to register 0, then stores bcd encoded version at address 0x0111
+void bcdEncodeTest(){
+	//Save a number into the register vX.
+	//6XNN
+	word start;
+	start.WORD = STARTADDR;
+	writeMemory(start, 0x60);
+	start.WORD++;	
+	writeMemory(start, 0xEF);
+	start.WORD++;
+	//Set i register to equal some address.
+	writeMemory(start, 0xA1);
+	start.WORD++;
+	writeMemory(start, 0x11);
+	start.WORD++;
+	//Call BCD encode on the register.
+	//FX33
+	writeMemory(start, 0xF0);
+	start.WORD++;
+	writeMemory(start, 0x33);
+}
+
+void randTest(){
+	//Save a number into register vX via CXNN.
+	word start;
+	start.WORD = STARTADDR;
+	writeMemory(start, 0xC0);
+	start.WORD++;
+	writeMemory(start, 0x0F);
+	start.WORD++;
+	writeMemory(start, 0xC0);
+	start.WORD++;
+	writeMemory(start, 0x0F);
+	start.WORD++;
+	writeMemory(start, 0xC0);
+	start.WORD++;
+	writeMemory(start, 0x0F);
+}
+
+
 void testConditionals(){
 	//Load in a program that:
 	//Loads an immediate value into register 0.
@@ -127,4 +167,116 @@ void testFunctions(){
 
 
 	//Do an addition, then run a piece of code somewhere else in memory.
+}
+
+//The following code below tests all of the screen related functions.
+/*
+
+Input diagram (respective to how chip 8 keys are mapped):
+	1 2 3 4           1 2 3 C
+	q w e r           4 5 6 D
+	a s d f mapped to 7 8 9 E
+	z x c v           A 0 B F
+
+Keyboard implementation:
+	If the event type is something, convert into a number corresponding to its position.
+
+array:
+	char inputs[15] = {
+	'x', '1', '2', '3',
+	'q', 'w', 'e', 'a',
+	's', 'd', 'z', 'c',
+	'4', 'r', 'f', 'v'};
+	//Conversion:
+	//SDL_Event -> inputs -> positional code
+	//To convert to corresponding opcode, just iterate through array until keyboard input is equal to the character.
+
+Input related instructions:
+EX9E:Skip to next instruction if key stored in vX was pressed.
+EXA1:Skip to next instruction if key stored in vX wasn't pressed.
+FX0A:Halt all operations until an input is made.
+
+*/
+int test(){
+	initScreen();
+	SDL_Event e;
+	bool quit = false;
+	bool drawRandom = false;
+	srand(1);
+	while(!quit){
+		while(SDL_PollEvent(&e) != 0){
+			if(e.type == SDL_QUIT){
+				quit = true;
+			}
+			if (e.type == SDL_KEYDOWN){
+				drawRandom = true;
+			}
+		}
+
+		if(drawRandom == true){
+			//Get a pseudorandom position on the screen and write to it to the frame buffer.
+			//Change seed.
+			//srand((unsigned)time(NULL));
+			int x = rand() % SCRNLEN;
+			int y = rand() % SCRNHEIGHT;
+
+			updatePixelInFrameBuffer(x, y, true);
+
+			drawRandom = false;
+		}
+		updateScreen();
+	}
+	deleteScreen();
+	//Need event loop to keep the screen up.
+	
+	return 0;
+}
+
+//Test for the draw function's following features:
+	//Drawing sprites onto the screen.
+	//Forcing vF to be 0.
+void drawTest(){
+	//Store font data in some arbitrary address (basic line).
+	word fontLoc;
+	fontLoc.WORD = 0x0000;
+	writeMemory(fontLoc, 0xFF);
+	fontLoc.WORD++;
+	writeMemory(fontLoc, 0x81);
+	fontLoc.WORD++;
+	writeMemory(fontLoc, 0xFF);
+
+	//Start of actual program:
+	word startAddr;
+	startAddr.WORD = STARTADDR;
+	//Set arbitrary coordinates with vX and vY.
+	writeMemory(startAddr, 0x60);//vX
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x00);
+	startAddr.WORD++;
+
+	writeMemory(startAddr, 0x61);//vY
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x01);
+	startAddr.WORD++;
+	//Set i to point to the font data's location.
+	writeMemory(startAddr, 0xA0);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x00);
+	//Register vF is now 2.
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x6F);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x02);
+	
+	//Call the draw function.
+	startAddr.WORD++;
+	writeMemory(startAddr, 0xD0);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x13);
+	//Call again to XOR the drawing out.
+	startAddr.WORD++;
+	writeMemory(startAddr, 0xD0);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x13);
+
 }
