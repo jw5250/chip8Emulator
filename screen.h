@@ -33,5 +33,5 @@ void updateScreen();
 
 void deleteScreen();
 
-void updatePixelInFrameBuffer(int x, int y, bool val);
+bool updatePixelInFrameBuffer(int x, int y, bool val);
 #endif

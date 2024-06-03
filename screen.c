@@ -21,7 +21,7 @@ int initScreen(){
 		return -1;
 	}
 	clearScreen();
-	return -0;
+	return 0;
 }
 
 
@@ -32,7 +32,6 @@ void clearScreen(){
 			frameBuffer[i][j] = false;
 		}
 	}
-	updateScreen();
 }
 
 //Update the screen based on the frame buffer.
@@ -46,9 +45,13 @@ void updateScreen(){
 	SDL_FreeSurface(winSurface);
 	winSurface = NULL;
 }
-//Updates the pixel in the frame buffer
-void updatePixelInFrameBuffer(int x, int y, bool val){
-	frameBuffer[y][x] = val;
+//Updates the pixel in the frame buffer.
+//0 if a collision occured, 1 otherwise.
+bool updatePixelInFrameBuffer(int x, int y, bool val){
+	//Guarantee the resultant boolean is ALWAYS 1 or 0
+	bool collision = ( frameBuffer[y][x] && val );
+	frameBuffer[y][x] = (frameBuffer[y][x] ^ val);
+	return collision;
 }
 
 
@@ -70,7 +73,7 @@ void drawPixel(int x, int y, int n, bool val, SDL_Surface *surf){
 			//Origin + rows of bytes from the new location + pixels away from the new location.
 			int currentPixelLocation = location + (surf->pitch * i) + (fmt->BytesPerPixel * j);
 			//Assumes 3 byte pixel.
-			if(val >= true){	//Booleans are set to 1 for true
+			if(val >= true){	//Booleans are set to 1 or greater for true
 				*( (uint8_t*)(surf->pixels) + currentPixelLocation + 0 ) = 255;
 				*( (uint8_t*)(surf->pixels) + currentPixelLocation + 1 ) = 255;
 				*( (uint8_t*)(surf->pixels) + currentPixelLocation + 2 ) = 255;
