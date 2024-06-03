@@ -1,20 +1,30 @@
 #include "loader.h"
-//LIL_ENDIAN will change loadfile to load 
+//LIL_ENDIAN will change loadfile to load in little endian ROM
 #include "dataType.h"
-
 #include "cpu.h"
 #include "memory.h"
 #include <stdio.h>
 
 
 //Should add a translator from chip8 code to hex opcodes (in string form) in order to read each instruction.
-void loadFile(char* title){
+int loadFile(char* title){
     //Open a file in binary and read mode.
     FILE* chip8File = fopen(title, "rb");
     FILE* newFile = fopen("instructions","wb");
     word instruction;
     size_t bytesRead;
-    int addr = STARTADDR;
+    word addr;
+    addr.WORD = STARTADDR;
+    //If memory doesn't exist
+    if(memoryExists() == 0){
+        printf("Memory doesn't exist.\n");
+        int memoryThere = initMemory();
+        if(memoryThere == 0){
+            printf("Couldn't initialize memory\n");
+            return 0;
+        }
+        printf("Memory initialized.\n");
+    }
     /*While file is not empty...*/
     while(!feof(chip8File)){
         bytesRead = fread(&instruction.WORD, sizeof(word), 1, chip8File);
@@ -28,12 +38,14 @@ void loadFile(char* title){
             instruction.BYTE.UPPER = BUFF;
 		#endif
 
-        //writeMemory(addr, instruction.UPPER);//Upper byte in here.
-        //writeMemory(addr+1, instruction.LOWER);//Lower byte in here.
-        //addr += sizeof(word);
+        writeMemory(addr, instruction.BYTE.UPPER);//Upper byte in here.
+        addr.WORD++;
+        writeMemory(addr, instruction.BYTE.LOWER);//Lower byte in here.
+        addr.WORD++;
         
-        //fprintf(newFile, "%x|", instruction.BYTE.UPPER);
-        //fprintf(newFile, "%x\n", instruction.BYTE.LOWER);
+        //Prints the upper and lower bytes of each instructions, separated by a |.
+        fprintf(newFile, "%x|", instruction.BYTE.UPPER);
+        fprintf(newFile, "%x\n", instruction.BYTE.LOWER);
 
         /*
         insert byte read from instruction into chip 8 memory, increment starting from start address.
@@ -41,4 +53,5 @@ void loadFile(char* title){
     }
 
     fclose(chip8File);
+    return 1;
 }
