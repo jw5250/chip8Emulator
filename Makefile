@@ -1,7 +1,8 @@
 CC=gcc
 EXENAME=main
-main: main.o memory.o cpu.o screen.o
-	$(CC) main.o cpu.o screen.o memory.o -o $(EXENAME) -lSDL2
+LILENDIANFLAG=-D LIL_ENDIAN
+main: main.o memory.o cpu.o screen.o loader.o
+	$(CC) main.o cpu.o screen.o memory.o loader.o -o $(EXENAME) -lSDL2
 
 main.o : main.c
 	$(CC) -c main.c -o main.o
@@ -11,10 +12,14 @@ memory.o : memory.c
 	$(CC) -c memory.c -o memory.o
 screen.o : screen.c
 	$(CC) -c screen.c -o screen.o 
+loader.o : loader.c
+	$(CC) -c loader.c -o loader.o $(LILENDIANFLAG)
+
 
 clean :
 	rm screen.o
 	rm main.o
 	rm cpu.o
 	rm memory.o
+	rm loader.o
 	rm $(EXENAME)
