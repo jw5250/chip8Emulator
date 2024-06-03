@@ -2,7 +2,7 @@
 #define MEMORY_C_INCLUDED
 #include "memory.h"
 #include <stdlib.h>
-
+#define MEMSIZE 4096
 //memory array will be moved into the memory.c file once I finish testing all of the instructions.
 byte* memory;
 
@@ -10,6 +10,9 @@ int initMemory(){
 	memory = (byte*)malloc(MEMSIZE*sizeof(byte));
 	//As part of memory initialization:
 		//Store font data!
+	return memory != NULL;
+}
+int memoryExists(){
 	return memory != NULL;
 }
 byte readMemory(register int address){

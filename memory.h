@@ -2,7 +2,11 @@
 #define MEMORY_H_INCLUDED
 #include "dataType.h"
 
-#define MEMSIZE 4096
+/*
+TODO:
+    Write in ROM that automatically inserts font data for each digit in hex.
+*/
+
 //4096 bytes of memory (available addresses)
 //Bytes are 8 bit
 //Interpreter occupies first 512 bytes of memory
@@ -12,6 +16,7 @@
 
 
 int initMemory();
+int memoryExists();
 byte readMemory(register int address);
 void writeMemory(register word address, register byte value);
 #endif
