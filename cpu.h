@@ -6,10 +6,10 @@
 	//Supposedly a big-endian machine, but use of WORD doesn't make the CPU loop independent of endianness. Fix!
 
 //0x0200 is 512 in decimal.
-#define STARTADDR 0x0200
+#define STARTADDR 512
 typedef struct{
 	//Registers
-	byte reg[0x10];
+	byte reg[16];
 	//Index register. Used for memory access
 	word i;
 	//stack pointer

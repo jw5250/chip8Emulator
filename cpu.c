@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#define STARTADDR 0x0200
 #define STACKSIZE 48
 #define STACKADDR 0x0
 //inline:Larger executable, but functions declared with it don't need to be pushed onto the stack and popped (alongside result).
@@ -75,7 +74,7 @@ static inline void rsh(int reg1){
 //1NNN
 static inline void jmp(word nextInstr){
 	//Debug message below.
-	//printf("Jumping\n");
+	printf("Jumping\n");
 	cpu.pc.WORD = nextInstr.WORD & 0x0fff;
 }
 //BNNN
@@ -84,7 +83,7 @@ static inline void jmpOff(word w1){
 }
 //ANNN
 static inline void setIndex(word w1){
-	//printf("set index:");
+	printf("set index");
 	cpu.i.WORD = w1.WORD & (0x0fff);
 }
 
@@ -127,7 +126,7 @@ static inline void bne(byte b1, byte b2){
 
 //6XNN
 static inline void load(int reg1, byte b1){
-	//printf("Register and byte:%d, %d\n", reg1, b1);
+	printf("Register and byte:%d, %d\n", reg1, b1);
 	cpu.reg[reg1] = b1;
 }
 
@@ -156,6 +155,7 @@ static inline void bcdEncode(int reg1){
 
 //DXYN
 static inline void draw(int regX, int regY, int nBytes){
+	printf("Drawing\n");
 	int i = 0;
 	byte bitMasks[BYTE_LEN_IN_BITS] = {128, 64, 32, 16, 8, 4, 2, 1};
 	bool collisionOccuredAtSomeTime = false;
@@ -164,7 +164,7 @@ static inline void draw(int regX, int regY, int nBytes){
 		byte b = readMemory(cpu.i.WORD + i);
 		while(j < BYTE_LEN_IN_BITS){
 		 	bool collisionOccured = false;
-			//Start of untested code
+			
 			unsigned short hor = (cpu.reg[regX] + j) % SCRNLEN;
 			unsigned short ver = (cpu.reg[regY] + i) % SCRNHEIGHT;
 			if( (b & bitMasks[j]) != 0){
@@ -172,9 +172,8 @@ static inline void draw(int regX, int regY, int nBytes){
 			}else{
 				collisionOccured = updatePixelInFrameBuffer(hor, ver, false);
 			}
-			//End of untested code
 			if(collisionOccured == true){
-				//printf("Collision!\n");
+				
 				collisionOccuredAtSomeTime = true;
 			}
 			j++;
