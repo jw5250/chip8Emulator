@@ -37,11 +37,13 @@ void clearScreen(){
 //Update the screen based on the frame buffer.
 void updateScreen(){
 	SDL_Surface *winSurface = SDL_GetWindowSurface(win);
+	//Is calling blit and update window the reason for this being possibly really slow.
 	for(int i = 0; i < SCRNHEIGHT; i++){
 		for(int j = 0; j < SCRNLEN; j++){
 			drawPixel(j, i, PIXELSIZE, frameBuffer[i][j], winSurface);
 		}
 	}
+	SDL_UpdateWindowSurface(win);//Apparently, SDL_UpdateWindowSurface is an expensive call.
 	SDL_FreeSurface(winSurface);
 	winSurface = NULL;
 }
@@ -55,8 +57,9 @@ bool updatePixelInFrameBuffer(int x, int y, bool val){
 }
 
 
-//Transforms the relative screen coordinates to the window's actual coordinates, then draws a monochrome pixel.
+//Transforms the relative screen coordinates to the window's actual coordinates, then draws a monochrome pixel on it.
 //Draw a nxn sized pixel. n is a constant that determines the size of a "pixel".
+//Doesn't update the actual screen.
 //Assume all pixels are stored in three bytes, one for each color (R, B, G)
 void drawPixel(int x, int y, int n, bool val, SDL_Surface *surf){
 	frameBuffer[y][x] = val;
@@ -84,9 +87,10 @@ void drawPixel(int x, int y, int n, bool val, SDL_Surface *surf){
 			}
 		}
 	}
+	//Code below is sleighted for deletion. SDL_UpdateWindowSurface was mostly responsible for how slow drawing is.
 	SDL_Surface *winSurface = SDL_GetWindowSurface(win);
 	SDL_BlitSurface(surf, NULL, winSurface, NULL);
-	SDL_UpdateWindowSurface(win);
+	//SDL_UpdateWindowSurface(win);
 	SDL_FreeSurface(winSurface);
 	winSurface = NULL;
 }
