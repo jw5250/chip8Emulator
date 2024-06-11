@@ -235,6 +235,9 @@ int test(){
 //Test for the draw function's following features:
 	//Drawing sprites onto the screen.
 	//Forcing vF to be 0.
+//Test for the draw function's following features:
+	//Drawing sprites onto the screen.
+	//Forcing vF to be 0.
 void drawTest(){
 	//Store font data in some arbitrary address (basic line).
 	word fontLoc;
@@ -249,12 +252,12 @@ void drawTest(){
 	word startAddr;
 	startAddr.WORD = STARTADDR;
 	//Set arbitrary coordinates with vX and vY.
-	writeMemory(startAddr, 0x60);//vX
+	writeMemory(startAddr, 0x60);//vX = 60
 	startAddr.WORD++;
-	writeMemory(startAddr, 0x00);
+	writeMemory(startAddr, 0x3C);
 	startAddr.WORD++;
 
-	writeMemory(startAddr, 0x61);//vY
+	writeMemory(startAddr, 0x61);//vY = 1
 	startAddr.WORD++;
 	writeMemory(startAddr, 0x01);
 	startAddr.WORD++;
@@ -278,5 +281,223 @@ void drawTest(){
 	writeMemory(startAddr, 0xD0);
 	startAddr.WORD++;
 	writeMemory(startAddr, 0x13);
+}
+
+void dumpAndStore(){
+	//Load in a bunch of numbers into registers from v0-vX, then write to i.
+	word startAddr;
+	startAddr.WORD = STARTADDR;
+	//6XNN
+	writeMemory(startAddr, 0x60);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x00);
+	startAddr.WORD++;
+
+	writeMemory(startAddr, 0x61);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x01);
+	startAddr.WORD++;
+
+	writeMemory(startAddr, 0x62);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x02);
+	startAddr.WORD++;
+
+	//ANNN
+	//Initialize AN
+	writeMemory(startAddr, 0xA0);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x00);
+	startAddr.WORD++;
+
+	//FX55
+	writeMemory(startAddr, 0xF2);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x55);
+	startAddr.WORD++;
+
+
+	//FX65
+	writeMemory(startAddr, 0xF2);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x65);
+	startAddr.WORD++;
+}
+
+void addCarryTest(){
+	//Save a number into the register vX.
+	//6XNN
+	word start;
+	start.WORD = STARTADDR;
+	writeMemory(start, 0x6F);
+	start.WORD++;
+	writeMemory(start, 0x34);
+	start.WORD++;
+	writeMemory(start, 0x60);
+	start.WORD++;
+	writeMemory(start, 0xF0);
+	start.WORD++;
+	//Add zero register to itself.
+	//8XY4
+	writeMemory(start, 0x80);
+	start.WORD++;
+	writeMemory(start, 0x04);
+}
+
+
+void loadTestInputs(){
+
+	word startAddr;
+	startAddr.WORD = STARTADDR;
+	//FIRST LOOP BELOW
+	//Instruction that skips to the next loop if a key is pressed(EX9E)
+	writeMemory(startAddr, 0xE1);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0xA1);
+
+	//Instruction that jumps to the instruction after this one.(1NNN) 0x204
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x12);
+
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x06);
+
+
+	//Instruction that jumps back to the start address(1NNN)
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x12);
+
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x00);
+
+
+	//SECOND LOOP BELOW
+	//Instruction that jumps to the await instruction if a key isn't pressed(EXA1)
+	startAddr.WORD++;
+	writeMemory(startAddr, 0xE1);
+
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x9E);
+
+	//Instruction that jumps to the await instruction(1NNN)
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x12);
+
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x0C);
+
+
+	//Instruction that jumps back to the start address of the second loop.(1NNN)
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x12);
+
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x06);
+
+
+	//AWAIT Part
+	//Await instruction(FX0A)
+	startAddr.WORD++;
+	writeMemory(startAddr, 0xF2);
+
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x0A);
+
+	//Subroutine to print fonts
+		//Clear the screen.(0x00E0)
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x00);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0xE0);
+
+	//FX29
+	//Takes the key value from register 2, set i to the font location.
+	startAddr.WORD++;
+	writeMemory(startAddr, 0xF2);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x29);
+
+	//6XNN
+	//Set x, y registers.
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x63);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x0A);
+
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x64);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x0A);
+
+	//DXYN
+	//writes the number to (10, 10) on screen.
+	startAddr.WORD++;
+	writeMemory(startAddr, 0xD3);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x45);
+
+	//Instruction that jumps to await instruction.
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x12);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x0C);
+}
+
+//Test following instructions:
+	//Timer instructions (FX15, FX07)
+	//Also should use print statements to log changes to make sure everything works properly.
+void timerROM(){
+	//Set the timer.
+	//Get the value of the timer and put into register
+	//If timer value is zero, jump to a function that draws.
+	//Else, jump to the instruction that just gets the timer value.
+	word startAddr;
+	//Load in a value into register 0
+	startAddr.WORD = STARTADDR;
+	writeMemory(startAddr, 0x60);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x01);
+
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x61);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x00);
+
+	//Set the timer (FX15)
+	startAddr.WORD++;
+	writeMemory(startAddr, 0xF0);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x15);
+
+	//Get the timer value, put in register 0.
+	startAddr.WORD++;
+	writeMemory(startAddr, 0xF0);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x07);
+
+	//If timer value isn't equal to zero, skip next instruction.
+	//Target: Register zero
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x40);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x00);
+
+	//Jump to a part that will constantly loop
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x12);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x0E);
+
+	//Jump to the get timer.
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x12);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x06);
+
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x12);
+	startAddr.WORD++;
+	writeMemory(startAddr, 0x0E);
+
 
 }
