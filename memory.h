@@ -1,7 +1,7 @@
 #ifndef MEMORY_H_INCLUDED
 #define MEMORY_H_INCLUDED
 #include "dataType.h"
-
+#define FONT_HEIGHT 5
 /*
 TODO:
     Write in ROM that automatically inserts font data for each digit in hex.
