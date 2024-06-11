@@ -2,8 +2,6 @@
 #define CPU_H_INCLUDED
 #include "dataType.h"
 
-//Current problems:
-	//Supposedly a big-endian machine, but use of WORD doesn't make the CPU loop independent of endianness. Fix!
 
 //0x0200 is 512 in decimal.
 #define STARTADDR 512
@@ -26,6 +24,6 @@ typedef struct{
 chip8reg cpu;
 
 void initCpu();
-void cpuLoop();
+void cpuLoop(int mostRecentKey);
 
 #endif

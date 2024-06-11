@@ -3,13 +3,15 @@
 #define WORD_LEN 2
 #define BYTE_LEN_IN_BITS 8
 #include "cpu.h"
+#include "timer.h"
 #include "memory.h"
 #include "screen.h"
+#include "keyboard.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #define STACKSIZE 48
-#define STACKADDR 0x0
+#define STACKADDR 0x50
 
 //Quirk notes:
 	//Does x = x >> 1 and x << 1 instead of the following:
@@ -17,7 +19,11 @@
 //inline:Larger executable, but functions declared with it don't need to be pushed onto the stack and popped (alongside result).
 //I could rewrite the giant if else statement into a jump table. Is it worth it though?
 
+static bool awaitKeyboardInput;
+static int registerStorage;
+
 void initCpu(){
+	awaitKeyboardInput = false;
 	cpu.pc.WORD = STARTADDR;
 	//Stack size is 96 bytes long. Up to 48 levels of function calls
 	//According to my sources its actually half that but I want to try this first.
@@ -97,12 +103,12 @@ static inline void rsh(int reg1){
 //Shift left contents in a register by 1
 //If reg f would have been modified, its value is overridden by the carry flag.
 static inline void lsh(int reg1){
-	printf("Left shift register %d before:%d\n", reg1, cpu.reg[reg1]);
+	//printf("Left shift register %d before:%d\n", reg1, cpu.reg[reg1]);
 	byte a = ( ((cpu.reg[reg1]) & 0x80) != 0);//This doesn't work.
-	printf("Overflow flag:%d\n", a);
+	//printf("Overflow flag:%d\n", a);
 	cpu.reg[reg1] <<= 1;
 	cpu.reg[0xf] = a;
-	printf("Left shift register %d:%d\n", reg1, cpu.reg[reg1]);
+	//printf("Left shift register %d:%d\n", reg1, cpu.reg[reg1]);
 }
 
 //1NNN
@@ -127,10 +133,13 @@ static inline void addIndex(int reg1){
 }
 
 //FX29
-static inline void getIndexLocation(int reg1){
 	//Gets font data
 	//If reg1 contains 1, i is set to the start address of the sprite of '1,' etc..
 	//Requires font data existing for this particular sprite.
+static inline void getIndexLocation(int reg1){
+	// Note:
+		// No information as to what happens if reg1 contains a value greater than 0xf!
+	cpu.i.WORD = cpu.reg[reg1] * FONT_HEIGHT;
 }
 
 
@@ -217,6 +226,50 @@ static inline void draw(int regX, int regY, int nBytes){
 	updateScreen();
 }
 
+
+//Get the delay timer value(FX07)
+static inline void getDTimerValue(int reg1){
+	cpu.reg[reg1] = getDelayTimerValue();
+}
+
+
+//Set the delay timer value(FX15)
+static inline void setDTimerValue(int reg1){
+	setDelayTimer(cpu.reg[reg1]);
+}
+
+//If key input is pressed (or not, depending on targetVal), skip next instruction.
+//EX9E (if pressed, skip next instruction), EXA1 (if not pressed, skip next instruction.)
+static inline void keyPressed(int keyInput, bool targetVal){
+	//If key is found
+	if(findKey(keyInput) == targetVal){
+		printf("Skipping next instruction, as:");
+		if(targetVal == false){
+			printf("key not pressed\n");
+		}else{
+			printf("key pressed\n");
+		}
+		cpu.pc.WORD += WORD_LEN;
+	}
+		printf("Not skipping next instruction. Instruction is: ");
+	if(targetVal == false){
+		printf("Skip on key not pressed\n");
+	}else{
+
+		printf("Skip on key pressed\n");
+	}
+}
+
+//FX0A
+static inline void awaitInput(int reg1){
+	//CPU now awaits input from keyboard.
+	awaitKeyboardInput = true;
+	registerStorage = reg1;
+	printf("Awaiting input for register:%d\n", reg1);
+	//When input is received, get the input and store in a given instruction.
+}
+
+
 //FX55
 //Dump all register values into memory(0 to X), starting from address i. (corresponding to starting with reg 0)
 static inline void dumpReg(int reg1){
@@ -227,7 +280,6 @@ static inline void dumpReg(int reg1){
 		addrBuffer.WORD++;
 	}
 }
-
 
 //FX65
 //Load all register values from memory(0 to X), starting from address i. (corresponding to starting with reg 0).
@@ -269,9 +321,20 @@ static inline void shiftOperations(int reg1, int id){
 	}
 }
 
-void cpuLoop(){
+void cpuLoop(int mostRecentKey){
 	//Issue: how do we know when the program ends?
 		//Assume it loops infinitely at the end. Hopefully.
+	//Issue: how to handle IO calls?
+	if(awaitKeyboardInput == true){
+		if(mostRecentKey != EMPTY_KEY){
+			cpu.reg[registerStorage] = mostRecentKey;
+			printf("Keyboard input was received. Turning off signal\n");
+			awaitKeyboardInput = false;
+		}
+
+		//Done in case input is awaited.
+		return;
+	}
 	word currentInstruction;
 	//Big endian storage means most signficant byte is stored at word address.
 	currentInstruction.BYTE.UPPER = readMemory(cpu.pc.WORD);
@@ -313,6 +376,8 @@ void cpuLoop(){
 		address.WORD = ((firstNibble | secondNibble) | thirdNibble);
 		jmp( address );
 	}else if(opcode == 2){
+		//Can be simplified.
+
 		//Interpret the address as a word
 		word address;//Address stores instruction after the branch.
 		word stackLoc;
@@ -368,6 +433,13 @@ void cpuLoop(){
 	}else if(opcode == 0xD){
 		draw(firstNibble >> 8, secondNibble >> 4, thirdNibble);
 	}else if(opcode == 0xE){
+		if( currentInstruction.BYTE.LOWER == 0x9E ){
+			printf("Attempting instruction EX9E\n");
+			keyPressed( (firstNibble >> 8), true );
+		}else if(currentInstruction.BYTE.LOWER == 0xA1){
+			printf("Attempting instruction EXA1\n");
+			keyPressed( (firstNibble >> 8), false );
+		}
 	}else if(opcode == 0xF){
 		if( currentInstruction.BYTE.LOWER == 0x33 ){
 			bcdEncode( (firstNibble >> 8) );
@@ -375,11 +447,18 @@ void cpuLoop(){
 			addIndex( (firstNibble >> 8) );
 		}else if( currentInstruction.BYTE.LOWER == 0x29 ){
 			//Requires that on startup, digit fonts are already placed where they should be.
+			getIndexLocation( (firstNibble >> 8) );
 		}else if( currentInstruction.BYTE.LOWER == 0x55 ){
 			dumpReg( (firstNibble >> 8) );
 		}else if( currentInstruction.BYTE.LOWER == 0x65 ){
 			//printf("Loading registers\n");
 			loadReg( (firstNibble >> 8) );
+		}else if( currentInstruction.BYTE.LOWER == 0x07 ){
+			getDTimerValue( (firstNibble >> 8) );
+		}else if( currentInstruction.BYTE.LOWER == 0x15 ){
+			setDTimerValue( (firstNibble >> 8) );
+		}else if( currentInstruction.BYTE.LOWER == 0x0A ){
+			awaitInput( (firstNibble >> 8) );
 		}
 	}else{
 		fprintf(stderr, "Uh oh\n");
