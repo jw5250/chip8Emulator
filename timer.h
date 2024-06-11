@@ -1,6 +1,6 @@
 #ifndef TIMER_H_INCLUDED
 #define TIMER_H_INCLUDED
-
+//Handles all of the timers (sound and delay)
 
 //Delay timer instructions:
     //Get the delay timer value(FX07)
