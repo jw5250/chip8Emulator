@@ -248,20 +248,20 @@ static inline void setSTimerValue(int reg1){
 static inline void keyPressed(int keyInput, bool targetVal){
 	//If key is found
 	if(findKey(keyInput) == targetVal){
-		printf("Skipping next instruction, as:");
+		//printf("Skipping next instruction, as:");
 		if(targetVal == false){
-			printf("key not pressed\n");
+			//printf("key not pressed\n");
 		}else{
-			printf("key pressed\n");
+			//printf("key pressed\n");
 		}
 		cpu.pc.WORD += WORD_LEN;
 	}
-		printf("Not skipping next instruction. Instruction is: ");
+		//printf("Not skipping next instruction. Instruction is: ");
 	if(targetVal == false){
-		printf("Skip on key not pressed\n");
+		//printf("Skip on key not pressed\n");
 	}else{
 
-		printf("Skip on key pressed\n");
+		//printf("Skip on key pressed\n");
 	}
 }
 
@@ -270,7 +270,7 @@ static inline void awaitInput(int reg1){
 	//CPU now awaits input from keyboard.
 	awaitKeyboardInput = true;
 	registerStorage = reg1;
-	printf("Awaiting input for register:%d\n", reg1);
+	//printf("Awaiting input for register:%d\n", reg1);
 	//When input is received, get the input and store in a given instruction.
 }
 
@@ -333,7 +333,7 @@ void cpuLoop(int mostRecentKey){
 	if(awaitKeyboardInput == true){
 		if(mostRecentKey != EMPTY_KEY){
 			cpu.reg[registerStorage] = mostRecentKey;
-			printf("Keyboard input was received. Turning off signal\n");
+			//printf("Keyboard input was received. Turning off signal\n");
 			awaitKeyboardInput = false;
 		}
 
