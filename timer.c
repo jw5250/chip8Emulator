@@ -2,23 +2,29 @@
 #include <SDL2/SDL.h>
 #include <stdbool.h>
 
+
 uint32_t delayTimer;
 uint32_t startDelayTime;
 
 uint32_t soundTimer;
 uint32_t startSoundTime;
 
+
+
+
+
 void initTimers(){
     delayTimer = 0;
     startDelayTime = 0;
     soundTimer = 0;
     startSoundTime = 0;
+
 }
 
 void setDelayTimer(uint32_t milliseconds){
     delayTimer = milliseconds;
     startDelayTime = SDL_GetTicks();
-    printf("%d\n", startDelayTime);
+    //printf("%d\n", startDelayTime);
 }
 
 
@@ -35,7 +41,7 @@ uint32_t getDelayTimerValue(){
 void setSoundTimer(uint32_t milliseconds){
     soundTimer = milliseconds;
     startSoundTime = SDL_GetTicks();
-    printf("%d\n", startSoundTime);
+    //printf("%d\n", startSoundTime);
     //Start sound.
 }
 
@@ -44,5 +50,6 @@ bool checkSoundTimer(){
         //If this is true, stop the sound.
         return true;
     }
+    //If beep sound isn't playing, play beep sound.
     return false;
 }

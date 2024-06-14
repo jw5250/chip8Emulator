@@ -1,8 +1,11 @@
 CC=gcc
 EXENAME=main
 LILENDIANFLAG=-D LIL_ENDIAN
+#Phony is for specifying targets that may not represent an actual file
+.PHONY=clean
+
 main: main.o memory.o cpu.o screen.o loader.o timer.o keyboard.o
-	$(CC) main.o cpu.o screen.o memory.o loader.o timer.o keyboard.o -o $(EXENAME) -lSDL2
+	$(CC) main.o cpu.o screen.o memory.o loader.o timer.o keyboard.o -o $(EXENAME) -lSDL2 -lSDL2_Mixer
 
 main.o : main.c
 	$(CC) -c main.c -o main.o

@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #define STACKSIZE 48
+//0x50 is 80 in hex
 #define STACKADDR 0x50
 
 //Quirk notes:
@@ -113,7 +114,7 @@ static inline void lsh(int reg1){
 
 //1NNN
 static inline void jmp(word nextInstr){
-	//printf("Jumping\n");
+	//printf("Jumping to address %x\n", nextInstr.WORD);
 	cpu.pc.WORD = nextInstr.WORD & 0x0fff;
 }
 //BNNN
@@ -159,7 +160,6 @@ static inline void beq(byte b1, byte b2){
 
 //4XNN
 static inline void bne(byte b1, byte b2){
-	//printf("Not equal:%d, %d\n", b1, b2);
 	if(b1 != b2){
 		cpu.pc.WORD += WORD_LEN;
 	}
@@ -230,12 +230,17 @@ static inline void draw(int regX, int regY, int nBytes){
 //Get the delay timer value(FX07)
 static inline void getDTimerValue(int reg1){
 	cpu.reg[reg1] = getDelayTimerValue();
+	//printf("Timer value:%d\n", cpu.reg[reg1]);
 }
 
 
 //Set the delay timer value(FX15)
 static inline void setDTimerValue(int reg1){
 	setDelayTimer(cpu.reg[reg1]);
+}
+//Set the sound timer value(FX18)
+static inline void setSTimerValue(int reg1){
+	setSoundTimer(cpu.reg[reg1]);
 }
 
 //If key input is pressed (or not, depending on targetVal), skip next instruction.
@@ -434,10 +439,10 @@ void cpuLoop(int mostRecentKey){
 		draw(firstNibble >> 8, secondNibble >> 4, thirdNibble);
 	}else if(opcode == 0xE){
 		if( currentInstruction.BYTE.LOWER == 0x9E ){
-			printf("Attempting instruction EX9E\n");
+			//printf("Attempting instruction EX9E\n");
 			keyPressed( (firstNibble >> 8), true );
 		}else if(currentInstruction.BYTE.LOWER == 0xA1){
-			printf("Attempting instruction EXA1\n");
+			//printf("Attempting instruction EXA1\n");
 			keyPressed( (firstNibble >> 8), false );
 		}
 	}else if(opcode == 0xF){
@@ -459,6 +464,8 @@ void cpuLoop(int mostRecentKey){
 			setDTimerValue( (firstNibble >> 8) );
 		}else if( currentInstruction.BYTE.LOWER == 0x0A ){
 			awaitInput( (firstNibble >> 8) );
+		}else if( currentInstruction.BYTE.LOWER == 0x18 ){
+			setSTimerValue( (firstNibble >> 8) );
 		}
 	}else{
 		fprintf(stderr, "Uh oh\n");
