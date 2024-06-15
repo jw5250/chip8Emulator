@@ -243,25 +243,11 @@ static inline void setSTimerValue(int reg1){
 	setSoundTimer(cpu.reg[reg1]);
 }
 
-//If key input is pressed (or not, depending on targetVal), skip next instruction.
+//If a key is pressed that has the same value as vX (or not, depending on targetVal), skip next instruction.
 //EX9E (if pressed, skip next instruction), EXA1 (if not pressed, skip next instruction.)
-static inline void keyPressed(int keyInput, bool targetVal){
-	//If key is found
-	if(findKey(keyInput) == targetVal){
-		//printf("Skipping next instruction, as:");
-		if(targetVal == false){
-			//printf("key not pressed\n");
-		}else{
-			//printf("key pressed\n");
-		}
+static inline void keyPressed(int reg1, bool targetVal){
+	if(findKey(cpu.reg[reg1]) == targetVal){
 		cpu.pc.WORD += WORD_LEN;
-	}
-		//printf("Not skipping next instruction. Instruction is: ");
-	if(targetVal == false){
-		//printf("Skip on key not pressed\n");
-	}else{
-
-		//printf("Skip on key pressed\n");
 	}
 }
 
@@ -439,10 +425,10 @@ void cpuLoop(int mostRecentKey){
 		draw(firstNibble >> 8, secondNibble >> 4, thirdNibble);
 	}else if(opcode == 0xE){
 		if( currentInstruction.BYTE.LOWER == 0x9E ){
-			//printf("Attempting instruction EX9E\n");
+			//printf("Attempting instruction EX9E. At address:%x\n", cpu.pc.WORD);
 			keyPressed( (firstNibble >> 8), true );
 		}else if(currentInstruction.BYTE.LOWER == 0xA1){
-			//printf("Attempting instruction EXA1\n");
+			//printf("Attempting instruction EXA1. At Address:%x\n", cpu.pc.WORD);
 			keyPressed( (firstNibble >> 8), false );
 		}
 	}else if(opcode == 0xF){
@@ -463,6 +449,7 @@ void cpuLoop(int mostRecentKey){
 		}else if( currentInstruction.BYTE.LOWER == 0x15 ){
 			setDTimerValue( (firstNibble >> 8) );
 		}else if( currentInstruction.BYTE.LOWER == 0x0A ){
+			printf("Awaiting input\n");
 			awaitInput( (firstNibble >> 8) );
 		}else if( currentInstruction.BYTE.LOWER == 0x18 ){
 			setSTimerValue( (firstNibble >> 8) );
