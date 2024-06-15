@@ -1,12 +1,30 @@
 #include "timer.h"
 #include <SDL2/SDL.h>
 #include <stdbool.h>
+/*
+
+General philosophy for how the timers work:
+    Progress of the timer is the current time since the SDL library was initialized minus that of when the timer started.
+
+    The difference between the current time since initialization and that taken when the timer started is the time that
+    currently has passed.
+
+*/
 
 
+/*
+Separate value here is needed to determine at what time the timer should go.
+
+soundTimer has the same purpose for its respective timer.
+*/
 uint32_t delayTimer;
+
+
+//Reference of when the timer was started. startSoundTime has the same purpose for its respective timer.
 uint32_t startDelayTime;
 
 uint32_t soundTimer;
+
 uint32_t startSoundTime;
 
 
@@ -24,7 +42,6 @@ void initTimers(){
 void setDelayTimer(uint32_t milliseconds){
     delayTimer = milliseconds;
     startDelayTime = SDL_GetTicks();
-    //printf("%d\n", startDelayTime);
 }
 
 
@@ -34,15 +51,12 @@ uint32_t getDelayTimerValue(){
     if(currentTime >= delayTimer){
         return 0;
     }
-	//As the delay timer decrements at a rate of 60hz, do this operation.
     return delayTimer-currentTime;
 }
 
 void setSoundTimer(uint32_t milliseconds){
     soundTimer = milliseconds;
     startSoundTime = SDL_GetTicks();
-    //printf("%d\n", startSoundTime);
-    //Start sound.
 }
 
 bool checkSoundTimer(){
