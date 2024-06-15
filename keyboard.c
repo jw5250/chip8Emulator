@@ -10,20 +10,14 @@ Input diagram (respective to how chip 8 keys are mapped):
 	z x c v           A 0 B F
 */
 
-char inputsCharRep[TOTAL_INPUTS] = {
-	'x', '1', '2', '3',
-	'q', 'w', 'e', 'a',
-	's', 'd', 'z', 'c',
-	'4', 'r', 'f', 'v'
-};
 
-
-SDL_Keycode inputs[TOTAL_INPUTS] = {
+const SDL_Keycode inputs[TOTAL_INPUTS] = {
 	SDLK_x, SDLK_1, SDLK_2, SDLK_3,
 	SDLK_q, SDLK_w, SDLK_e, SDLK_a,
 	SDLK_s, SDLK_d, SDLK_z, SDLK_c,
 	SDLK_4, SDLK_r, SDLK_f, SDLK_v
 };
+
 //Keeps track of which inputs are being held down at the moment.
 bool inputBoard[TOTAL_INPUTS];
 
@@ -41,7 +35,7 @@ void takeInput(SDL_Keycode c){
     byte encoding = 0;
     while(encoding < TOTAL_INPUTS){
         if(c == inputs[encoding]){
-            printf("Input in:%c\n", inputsCharRep[encoding]);
+            //printf("Input in:%c\n", inputsCharRep[encoding]);
             inputBoard[encoding] = true;
             mostRecentPressed = encoding;
             return;
@@ -54,7 +48,7 @@ void removeInput(SDL_Keycode c){
     byte encoding = 0;
     while(encoding < TOTAL_INPUTS){
         if(c == inputs[encoding]){
-            printf("Input out:%c\n", inputsCharRep[encoding]);
+            //printf("Input out:%c\n", inputsCharRep[encoding]);
             inputBoard[encoding] = false;
             return;
         }
