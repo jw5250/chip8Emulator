@@ -1,11 +1,7 @@
-//This should contain data related to the screen.
-//Progress:
-	//Everything here works as expected.
-		//Extremely slow to update! Later will work on figuring out how to make it run faster.
-			//Suspect blit may be a big contributor, don't know enough about SDL currently to make the decision.
-
 #ifndef SCREEN_H_INCLUDED
 #define SCREEN_H_INCLUDED
+
+//This should contain data and functions related to the screen.
 
 #include <stdbool.h>
 #include <SDL2/SDL.h>
@@ -19,19 +15,19 @@
 
 //64x32 bit
 
-/*
-	Removed win, framebuffer these from this file, as they are supposed to be concrete values only used in this file.
-	If I don't, mac compiler complains that these labels have no actual value respective to them
-		Seen as unresolved symbols in linker
-*/
-
+//Initialize all data pertaining to the screen. Clear it.
 int initScreen();
 
+//Clear the screen.
 void clearScreen();
 
+//Update the screen based on data from the frame buffer.
 void updateScreen();
 
+//Delete the screen.
 void deleteScreen();
 
+//Update a single chip 8 "pixel."
 bool updatePixelInFrameBuffer(int x, int y, bool val);
+
 #endif

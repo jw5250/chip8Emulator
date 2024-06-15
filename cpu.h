@@ -1,7 +1,7 @@
 #ifndef CPU_H_INCLUDED
 #define CPU_H_INCLUDED
 #include "dataType.h"
-
+//Define the chip8 CPU.
 
 //0x0200 is 512 in decimal.
 #define STARTADDR 512
@@ -23,7 +23,10 @@ typedef struct{
 //Move into cpu.c after finishing.
 chip8reg cpu;
 
+//Start up the cpu.
 void initCpu();
+
+//Do the fetch decode execute cycle of the cpu.
 void cpuLoop(int mostRecentKey);
 
 #endif

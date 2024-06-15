@@ -2,24 +2,26 @@
 #define TIMER_H_INCLUDED
 //Handles all of the timers (sound and delay)
 
-//Delay timer instructions:
-    //Get the delay timer value(FX07)
-        //Delay timer value 
-    //Set the delay timer value(FX015)
-//Sound timer instructions
-
-//Need two timer objects:
-    //One for sound
-    //One for other stuff.
-
 #include <SDL2/SDL.h>
 #include <stdbool.h>
 
+//Initialize all timer data.
 void initTimers();
+
+//Set the delay timer to some value.
 void setDelayTimer(uint32_t milliseconds);
+
+
+
+//Get the current value of the delay timer.
 uint32_t getDelayTimerValue();
 
+
+
+//Set the sound timer to some value.
 void setSoundTimer(uint32_t milliseconds);
+
+//See if the sound timer has expired (return true) or not (return false)
 bool checkSoundTimer();
 
 

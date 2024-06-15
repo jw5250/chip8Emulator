@@ -1,5 +1,8 @@
 #ifndef MEMORY_H_INCLUDED
 #define MEMORY_H_INCLUDED
+
+//The memory used by the chip8.
+
 #include "dataType.h"
 #define FONT_HEIGHT 5
 /*
