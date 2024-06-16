@@ -10,6 +10,10 @@
 int loadFile(char* title){
     //Open a file in binary and read mode.
     FILE* chip8File = fopen(title, "rb");
+    if(chip8File == NULL){
+        fprintf(stderr, "File doesn't exist or couldn't be opened.\n");
+        return -1;
+    }
     FILE* newFile = fopen("instructions","wb");
     word instruction;
     size_t bytesRead;

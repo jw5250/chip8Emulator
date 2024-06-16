@@ -1,13 +1,22 @@
-//TODO:
-	//Learn SDL_Mix
 //Status:
-	//According to all tests, everything is working properly.
-	//Maybe add a debugging tool to this as well?
 	//Tests passed:
-		//1, 2, 3, 4
-			//Need to check for quirks of the system.
-				//Goal: Chip8 quirks only.
+		//1, 2, 3, 4, , 6, 7
+	//Tests failed:
+		//5
+			//In case of going for Chip 8:
+				//Missing cases:
+					//Draw rate.
+						//Drawing sprites wait for vertical blank interrupt. Speed is limited to 60 frames per second.
+						//Needs more cycles per frame.
+							//How to count the amount of cycles per frame in your program?
+								//hZ
 	//Execution loop works properly
+//What next?:
+	//Write command line system for running this emulator.
+	//Maybe add a debugging tool to this?
+	//Extend to super chip 8
+//The main machine.
+//As of now, screen refreshes whenever the draw function is called.
 #include "cpu.h"
 #include "memory.h"
 #include "screen.h"
@@ -22,45 +31,13 @@
 #include <time.h>
 
 
-
-//Conceptual test for sound:
-	//Await an input, then play the beep sound for 0xFF milliseconds.
-void soundROM(){
-	word startAddr;
-	startAddr.WORD = STARTADDR;
-	//Await an input (FX0A)
-	writeMemory(startAddr, 0xF0);
-	startAddr.WORD++;
-	writeMemory(startAddr, 0x0A);
-	startAddr.WORD++;
-	
-	writeMemory(startAddr, 0x61);
-	startAddr.WORD++;
-	writeMemory(startAddr, 0xF0);
-	startAddr.WORD++;
-
-	//Set the sound timer. (FX18)
-
-	writeMemory(startAddr, 0xF1);
-	startAddr.WORD++;
-	writeMemory(startAddr, 0x18);
-	startAddr.WORD++;
-
-	//Loop to the first instruction. (1NNN)
-
-	writeMemory(startAddr, 0x12);
-	startAddr.WORD++;
-	writeMemory(startAddr, 0x00);
-	startAddr.WORD++;
-
-
-}
-
 int startMachine(char* ROM){
 	initInput();
 	initMemory();
-	//loadFile(ROM);
-	soundROM();
+	int flag = loadFile(ROM);
+	if(flag == -1){
+		return 1;
+	}
 	int error = initScreen();
 	if(error == -1){
 		fprintf(stderr, "Error with starting screen.\n");
@@ -118,50 +95,13 @@ int startMachine(char* ROM){
 	SDL_Quit();
 	return 0;
 }
-
+//How fast are certain operations on this computer?
 int main(int argc, char** argv){
-
-	startMachine("testFiles/3-corax+.ch8");
-	/*if(SDL_Init(SDL_INIT_TIMER | SDL_INIT_AUDIO) < 0){
-		fprintf(stderr, "Couldn't initialize timer or audio subsystems.\n");
+	if(argc != 2){
+		fprintf(stderr, "Needs a .ch8 file: ./main [file name]\n");
 		return 1;
 	}
-   if(Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0){
-        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
-    }
 
-	Mix_Chunk* test = Mix_LoadWAV("sounds/low.wav");
-	if(test == NULL){
-		fprintf(stderr, "Failed to load in test. Error:%s\n", Mix_GetError());
-	}
-	
-	Mix_PlayChannel(-1, test, -1);
-
-	Mix_FreeChunk(test);
-	test = NULL;
-	
-	initTimers();
-	//10 second delay timer.
-
-	
-	setSoundTimer(1000);
-	bool soundOff = checkSoundTimer();
-	while(soundOff == false){
-		soundOff = checkSoundTimer();
-	}
-	setDelayTimer(10000);
-	uint32_t value = getDelayTimerValue(); 
-	while(value != 0){
-		value = getDelayTimerValue(); 
-	}
-	printf("Finished delay timer.\n");
-
-	
-	printf("End of test.\n");
-	
-	Mix_Quit();
-	SDL_Quit();
-	
-	*/
+	startMachine(argv[1]);
 	return 0;
 }
