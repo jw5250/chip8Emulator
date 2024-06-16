@@ -13,13 +13,9 @@
 #define STACKSIZE 48
 //0x50 is 80 in hex
 #define STACKADDR 0x50
-
-//Quirk notes:
-	//Does x = x >> 1 and x << 1 instead of the following:
-		//x = y << 1 and x = y >> 1
 //inline:Larger executable, but functions declared with it don't need to be pushed onto the stack and popped (alongside result).
 //I could rewrite the giant if else statement into a jump table. Is it worth it though?
-
+	//I could also rewrite it into a switch statement.
 //Stores whether the machine should wait for an input or not.
 static bool awaitKeyboardInput;
 //Stores the register target in case of await input.
@@ -353,19 +349,18 @@ void cpuLoop(int mostRecentKey){
 	//Issue: how do we know when the program ends?
 		//Assume it loops infinitely at the end. Hopefully.	
 	if(awaitKeyboardInput == true){
-		if(mostRecentKey != EMPTY_KEY){
+		if( (mostRecentKey != EMPTY_KEY) && (keyStorage == EMPTY_KEY)){
 			cpu.reg[registerStorage] = mostRecentKey;
-			//keyStorage = mostRecentKey;
-			awaitKeyboardInput = false;
-			printf("Button is held.\n");
+			keyStorage = mostRecentKey;
 		}
-		/*if(keyStorage == EMPTY_KEY){
+		if(keyStorage == EMPTY_KEY){
 			return;
 		}
 		if(findKey(keyStorage) == false){
-			printf("Keyboard input was received. Turning off signal\n");
+			//printf("Keyboard input was received. Turning off signal\n");
 			awaitKeyboardInput = false;
-		}*/
+			keyStorage = EMPTY_KEY;
+		}
 
 		//Done in case input is awaited.
 		return;
