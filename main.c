@@ -1,22 +1,13 @@
-//Status:
-	//Tests passed:
-		//1, 2, 3, 4, , 6, 7
-	//Tests failed:
-		//5
-			//In case of going for Chip 8:
-				//Missing cases:
-					//Draw rate.
-						//Drawing sprites wait for vertical blank interrupt. Speed is limited to 60 frames per second.
-						//Needs more cycles per frame.
-							//How to count the amount of cycles per frame in your program?
-								//hZ
-	//Execution loop works properly
+//Notes on the following ROMs:
+	//RPS.ch8:
+		//Screen moves much faster than it should be.
+		//This is because there is no use of a timer, just a loop that counts to 160.
+			//Solution: Have the CPU run at a certain speed.
 //What next?:
 	//Write command line system for running this emulator.
 	//Maybe add a debugging tool to this?
 	//Extend to super chip 8
 //The main machine.
-//As of now, screen refreshes whenever the draw function is called.
 #include "cpu.h"
 #include "memory.h"
 #include "screen.h"
@@ -33,6 +24,7 @@
 
 int startMachine(char* ROM){
 	initInput();
+	initTimers();
 	initMemory();
 	int flag = loadFile(ROM);
 	if(flag == -1){
@@ -60,6 +52,9 @@ int startMachine(char* ROM){
 	if(sound == NULL){
 		fprintf(stderr, "Failed to load in sound. Error:%s\n", Mix_GetError());
 	}
+	//Milliseconds needed for an event to occur.
+	const int eventMilliseconds = 17;//17 actually, rounding up from 16.6666 (1000 milliseconds per 60 events.)
+	uint32_t timer = SDL_GetTicks();
 	//Do this to keep the screen up.
 	while(!quit){
 		//Parse inputs
@@ -73,18 +68,24 @@ int startMachine(char* ROM){
 			if(e.type == SDL_KEYUP){
 				removeInput(e.key.keysym.sym);
 			}
-		}
+		}	
 		//Check the sound.
 		if( checkSoundTimer() == true ){
+			//printf("Halting channel.\n");
 			Mix_HaltChannel(channel);
 		}else{
 			if(Mix_Playing(-1) == 0){
-        		channel = Mix_PlayChannel(-1, sound, 0);
+    			channel = Mix_PlayChannel(-1, sound, 0);
 			}
 		}
-
+		//Timer is at most 60hz.
+		if(SDL_GetTicks()-timer >= eventMilliseconds){
+			decrementTimers();
+			timer = SDL_GetTicks();//Set time reference to when the last time the timers were decremented.
+		}
 		cpuLoop(getMostRecentKeyPressed());
 		resetRecentPressed();
+
 	}
 	deleteScreen();
 
@@ -95,13 +96,18 @@ int startMachine(char* ROM){
 	SDL_Quit();
 	return 0;
 }
-//How fast are certain operations on this computer?
 int main(int argc, char** argv){
 	if(argc != 2){
 		fprintf(stderr, "Needs a .ch8 file: ./main [file name]\n");
 		return 1;
 	}
-
 	startMachine(argv[1]);
+	/*initMemory();
+	//Load in a test rom.
+	int flag = loadFile("testROM.txt");
+	if(flag == -1){
+		return 1;
+	}*/
+
 	return 0;
 }
