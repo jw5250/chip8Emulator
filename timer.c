@@ -1,66 +1,54 @@
 #include "timer.h"
+#include "dataType.h"
 #include <SDL2/SDL.h>
 #include <stdbool.h>
+#include <time.h>
+
 /*
-
-General philosophy for how the timers work:
-    Progress of the timer is the current time since the SDL library was initialized minus that of when the timer started.
-
-    The difference between the current time since initialization and that taken when the timer started is the time that
-    currently has passed.
-
+Timers run at 60hz.
 */
-
 
 /*
 Separate value here is needed to determine at what time the timer should go.
 
 soundTimer has the same purpose for its respective timer.
 */
-uint32_t delayTimer;
+byte delayTimer;
 
-
-//Reference of when the timer was started. startSoundTime has the same purpose for its respective timer.
-uint32_t startDelayTime;
-
-uint32_t soundTimer;
-
-uint32_t startSoundTime;
-
-
+byte soundTimer;
 
 
 
 void initTimers(){
     delayTimer = 0;
-    startDelayTime = 0;
     soundTimer = 0;
-    startSoundTime = 0;
-
 }
-
-void setDelayTimer(uint32_t milliseconds){
-    delayTimer = milliseconds;
-    startDelayTime = SDL_GetTicks();
-}
-
-
-uint32_t getDelayTimerValue(){
-	//Gets the amount of time that elapsed since the timer started.
-    uint32_t currentTime = SDL_GetTicks() - startDelayTime;
-    if(currentTime >= delayTimer){
-        return 0;
+void decrementTimers(){
+    if(delayTimer != 0){
+        delayTimer--;
     }
-    return delayTimer-currentTime;
+    if(soundTimer != 0){
+        soundTimer--;
+    }
 }
 
-void setSoundTimer(uint32_t milliseconds){
+void setDelayTimer(byte milliseconds){
+    delayTimer = milliseconds;
+}
+
+
+byte getDelayTimerValue(){
+
+    return delayTimer;
+}
+
+void setSoundTimer(byte milliseconds){
     soundTimer = milliseconds;
-    startSoundTime = SDL_GetTicks();
 }
 
 bool checkSoundTimer(){
-    if ( (SDL_GetTicks() - startSoundTime) >= soundTimer ){
+    //printf("Sound timer value:%d\n", soundTimer);
+    if ( soundTimer == 0 ){
         //If this is true, stop the sound.
         return true;
     }
