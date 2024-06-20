@@ -44,6 +44,7 @@ int loadFile(char* title){
             fprintf(stderr, "Error with reading chip8File.\n");
             fclose(chip8File);
             fclose(newFile);
+            return 1;
         }
 
         //In case we are running chip8 with little endian memory.
