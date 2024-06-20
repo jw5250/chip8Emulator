@@ -8,8 +8,10 @@
 #include "screen.h"
 #include "keyboard.h"
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <time.h>
 #define STACKSIZE 48
 //0x50 is 80 in hex
 #define STACKADDR 0x50
@@ -208,11 +210,15 @@ static inline void bcdEncode(int reg1){
 	writeMemory( iRegStore, buffer );
 }
 
+/*
+	According to chip 8 specifications, there should be horizontal and vertical clipping for sprites.
+	However, sprites' initial draw positions will always be within the range of the screen coordinate limits.
+*/
 //DXYN
 //Note:
 	//hor and ver don't need to be shorts. I don't remember why I did this. I'll probably change this in the future.
 static inline void draw(int regX, int regY, int nBytes){
-	//printf("Drawing\n");
+
 	int i = 0;
 	byte bitMasks[BYTE_LEN_IN_BITS] = {128, 64, 32, 16, 8, 4, 2, 1};
 	bool collisionOccuredAtSomeTime = false;
@@ -227,20 +233,15 @@ static inline void draw(int regX, int regY, int nBytes){
 			//If ver is greater than or equal to the frame buffer at any point, stop drawing.
 			break;
 		}
+		//printf("Value read:%x\n", b);
 		while(j < BYTE_LEN_IN_BITS){
-		 	bool collisionOccured = false;
 			unsigned short hor = (horOr + j) /*% SCRNLEN*/;
 			if(hor >= SCRNLEN){
 				break;
 			}
-			
-			if( (b & bitMasks[j]) != 0){
-				collisionOccured = updatePixelInFrameBuffer(hor, ver, true);
-			}else{
-				collisionOccured = updatePixelInFrameBuffer(hor, ver, false);
-			}
-			if(collisionOccured == true){
-				
+			//The pixel is white if a bit exists at a given position at (hor, ver)
+
+			if(updatePixelInFrameBuffer(hor, ver, ((b & bitMasks[j]) != 0) ) == true){
 				collisionOccuredAtSomeTime = true;
 			}
 			j++;
@@ -249,6 +250,9 @@ static inline void draw(int regX, int regY, int nBytes){
 	}
 	cpu.reg[0xF] = collisionOccuredAtSomeTime;
 	updateScreen();
+	//printf("Finished drawing sprite.\n");
+	//sleep(5);
+	//Make the program wait to draw. Why is the octojam4 thing breaking?
 }
 
 
@@ -265,6 +269,7 @@ static inline void setDTimerValue(int reg1){
 }
 //Set the sound timer value(FX18)
 static inline void setSTimerValue(int reg1){
+	//printf("Setting sound timer value in register %d to: %d\n", reg1, cpu.reg[reg1]);
 	setSoundTimer(cpu.reg[reg1]);
 }
 

@@ -9,4 +9,5 @@ ASSUMES LITTLE ENDIAN MACHINE.
 
 
 int loadFile(char* title);
+
 #endif
