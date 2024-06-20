@@ -69,7 +69,3 @@ int loadFile(char* title){
         */
     }
 }
-
-/*void convert(char* name){
-    FILE*
-}*/
