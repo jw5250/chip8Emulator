@@ -4,9 +4,11 @@
 		//This is because there is no use of a timer, just a loop that counts to 160.
 			//Solution: Have the CPU run at a certain speed.
 //What next?:
+	//Test on more things.
 	//Write command line system for running this emulator.
 	//Maybe add a debugging tool to this?
 	//Extend to super chip 8
+	//Redesign to allow custom beep sounds.
 //The main machine.
 #include "cpu.h"
 #include "memory.h"
@@ -48,7 +50,7 @@ int startMachine(char* ROM){
 	bool quit = false;
 	Mix_Chunk* sound = NULL;
 	int channel = -1;
-	sound = Mix_LoadWAV("sounds/low.wav");
+	sound = Mix_LoadWAV("sounds/beep.wav");
 	if(sound == NULL){
 		fprintf(stderr, "Failed to load in sound. Error:%s\n", Mix_GetError());
 	}
