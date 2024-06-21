@@ -1,3 +1,4 @@
 *.o
+*.ch8
 main
 instructions
