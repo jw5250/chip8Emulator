@@ -1,0 +1,38 @@
+This emulator was made with chip8 configurations in mind.
+This program was tested on:
+Timendus's test files (https://github.com/Timendus/chip8-test-suite)
+  Issues:
+    Not entirely sure how to fix the drawing issue.
+Several files from the chip8 archive (https://github.com/JohnEarnest/chip8Archive)
+  ROMS with no issues (as of current testing):
+    down8.ch8
+    glitchGhost.ch8
+      Not sure about this one.
+    petdog.ch8
+    piper.ch8
+  Current issues:
+    Several ROMs run way too fast on certain areas.
+      ROMs:
+        RPS.ch8
+        octojam2title.ch8
+        octojam5title.ch8
+        slipperyslope.ch8
+          The main gameplay works fine, but the man skating in the cutscenes moves too fast.
+        snek.ch8
+          Playable, but moves faster than it probably should.
+        danm8ku.ch8
+          Not too sure if the bullets are supposed to move as fast as they do in this game.
+    Draw Issues
+      ROMs:
+        octojam1title.ch8
+          The bat freezes once it reaches the left side of the screen. Why?
+        danm8ku.ch8
+          Title screen (danm8ku) doesn't display
+    Completely breaks (ROM is completely unplayable)
+      ROMs:
+        br8kout.ch8
+          I can "move" but the game doesn't actually proceed.
+        flightrunner.ch8
+          Freezes at initialization.
+        superpong.ch8
+          Freezes at title screen.
