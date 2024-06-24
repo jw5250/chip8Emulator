@@ -1,6 +1,6 @@
 CC=gcc
 EXENAME=main
-LILENDIANFLAG=-D LIL_ENDIAN
+BIGENDIANFLAG=-D BIG_ENDIAN
 #Phony is for specifying targets that may not represent an actual file
 .PHONY=clean
 
@@ -16,9 +16,9 @@ memory.o : memory.c
 screen.o : screen.c
 	$(CC) -c screen.c -o screen.o 
 loader.o : loader.c
-	$(CC) -c loader.c -o loader.o $(LILENDIANFLAG)
+	$(CC) -c loader.c -o loader.o $(BIGENDIANFLAG)
 keyboard.o : keyboard.c
-	$(CC) -c keyboard.c -o keyboard.o $(LILENDIANFLAG)
+	$(CC) -c keyboard.c -o keyboard.o
 timer.o : timer.c
 	$(CC) -c timer.c -o timer.o
 
