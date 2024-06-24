@@ -4,9 +4,8 @@
 #include "cpu.h"
 #include "memory.h"
 #include <stdio.h>
-
-//When loading in extra garbage, it's always the same contents of the previous word except the lower and upper bytes are swapped.
-
+//Loader doesn't consider how bytes are added into the program.
+//Needs to be fixed so it handles odd sized files as well.
 
 //Should add a translator from chip8 code to hex opcodes (in string form) in order to read each instruction.
 int loadFile(char* title){
@@ -17,25 +16,19 @@ int loadFile(char* title){
         return -1;
     }
     FILE* newFile = fopen("instructions","wb");
+    if(memoryExists() == 0){
+        fprintf(stderr, "Memory doesn't exist. Please initialize memory first\n");
+    }
     word instruction;
     size_t bytesRead;
     word addr;
     addr.WORD = STARTADDR;
-    //If memory doesn't exist
-    if(memoryExists() == 0){
-        fprintf(stderr, "Memory doesn't exist.\n");
-        int memoryThere = initMemory();
-        if(memoryThere == 0){
-            fprintf(stderr, "Couldn't initialize memory\n");
-            return 0;
-        }
-        printf("Memory initialized.\n");
-    }
-    /*While file is not empty...*/
+    byte mem;
+    word positionFromInstruction;
+    positionFromInstruction.WORD = sizeof(word)-1;
     while(1){
-        bytesRead = fread(&instruction.WORD, sizeof(word), 1, chip8File);
-        //If this is not here, fread is somehow still valid. Why?
         //Reports state from that of the most recent IO operation. If fread errors out because it reached the end of file, only then it will report that the end of the file was reached.
+        bytesRead = fread(&mem, sizeof(byte), 1, chip8File);
         if(feof(chip8File)){
             fclose(chip8File);
             fclose(newFile);
@@ -46,27 +39,43 @@ int loadFile(char* title){
             fclose(newFile);
             return 1;
         }
+		//Ex. Loading in chip8 ROM from big endian file
+        #ifdef BIG_ENDIAN
+            writeMemory(addr, mem);//Upper byte in here.
+            fprintf(newFile, "Address %x: %x\n", addr.WORD, mem);
+            addr.WORD++;
+            //Add offset to this and add.
+            /*
+                byte BUFF_swap;
+                BUFF_swap = instruction.BYTE.LOWER;
+                instruction.BYTE.LOWER = instruction.BYTE.UPPER;
+                instruction.BYTE.UPPER = BUFF_swap;
+            */
+        #else
+            //
+            word buffAddr;
+            buffAddr.WORD = positionFromInstruction.WORD + addr.WORD;
+            writeMemory(buffAddr, mem);
 
-        //In case we are running chip8 with little endian memory.
-		//Ex. Loading in little endian chip8 ROM
-        #ifdef LIL_ENDIAN
-            //This works!
-			byte BUFF;
-            BUFF = instruction.BYTE.LOWER;
-            instruction.BYTE.LOWER = instruction.BYTE.UPPER;
-            instruction.BYTE.UPPER = BUFF;
+            //If the last byte written was at addr.WORD...
+            if(positionFromInstruction.WORD == 0){
+                for(word i = addr; i.WORD < addr.WORD + sizeof(word);i.WORD++){
+                    fprintf(newFile, "Address %x: %x\n", i.WORD, readMemory(i.WORD));
+                }
+                addr.WORD += sizeof(word);
+                positionFromInstruction.WORD = sizeof(word)-1;
+            }
+            //Subtract the position from the instruction to invert byte positions.
+            positionFromInstruction.WORD--;
+            
 		#endif
-        writeMemory(addr, instruction.BYTE.UPPER);//Upper byte in here.
-        addr.WORD++;
-        writeMemory(addr, instruction.BYTE.LOWER);//Lower byte in here.
-        addr.WORD++;
-        
-        //Prints the upper and lower bytes of each instructions, separated by a |.
-        fprintf(newFile, "%x|", instruction.BYTE.UPPER);
-        fprintf(newFile, "%x\n", instruction.BYTE.LOWER);
-
         /*
-        insert byte read from instruction into chip 8 memory, increment starting from start address.
+            writeMemory(addr, instruction.BYTE.UPPER);//Upper byte in here.
+            fprintf(newFile, "Address %x: %x\n", addr.WORD, instruction.BYTE.UPPER);
+            addr.WORD++;
+            writeMemory(addr, instruction.BYTE.LOWER);//Lower byte in here.
+            fprintf(newFile, "Address %x: %x\n", addr.WORD, instruction.BYTE.LOWER);
+            addr.WORD++;
         */
     }
 }
