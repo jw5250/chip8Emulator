@@ -1,15 +1,23 @@
-//Notes on the following ROMs:
-	//RPS.ch8:
-		//Screen moves much faster than it should be.
-		//This is because there is no use of a timer, just a loop that counts to 160.
-			//Solution: Have the CPU run at a certain speed.
 //What next?:
-	//Test on more things.
-	//Write command line system for running this emulator.
 	//Maybe add a debugging tool to this?
-	//Extend to super chip 8
+	//Extend to super chip 8(?)
 	//Redesign to allow custom beep sounds.
 //The main machine.
+//Design concerns:
+	//Need to now maintain two constants controlling frequency of operation:
+		//One in cpu.c draw function
+		//One here.
+//Current goals:
+	//Add in new debug feature to switch between running it by step vs having it automatically go.
+		//How do I sync the timers with the step?
+	//Refactor the emulator in accordance to Design Concerns section.
+	//Try optimizing draw functions
+	//Test danm8ku.ch8 more.
+		//why does it chug so bad? are the bullets supposed to linger on the left side of the screen?
+//When steps are on:
+	//Milliseconds used to sync timer will only be processed if a button is pressed
+	//Sound will be resumed if a button is presesed, paused otherwise.
+	//CPU is processed after a single button pressed.
 #include "cpu.h"
 #include "memory.h"
 #include "screen.h"
@@ -32,6 +40,7 @@ int startMachine(char* ROM){
 	if(flag == -1){
 		return 1;
 	}
+	const int eventMilliseconds = 17;//17 actually, rounding up from 16.6666 (1000 milliseconds per 60 events.)
 	int error = initScreen();
 	if(error == -1){
 		fprintf(stderr, "Error with starting screen.\n");
@@ -42,9 +51,11 @@ int startMachine(char* ROM){
 		fprintf(stderr, "Video, audio couldn't be initialized.\n");
 		return 1;
 	}
-	if(Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0){
+	if(Mix_OpenAudio( MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0){
         printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
     }
+
+	srand(time(NULL));
 	//Keep track of all events.
 	SDL_Event e;
 	bool quit = false;
@@ -52,11 +63,14 @@ int startMachine(char* ROM){
 	int channel = -1;
 	sound = Mix_LoadWAV("sounds/beep.wav");
 	if(sound == NULL){
-		fprintf(stderr, "Failed to load in sound. Error:%s\n", Mix_GetError());
+		fprintf(stderr, "Failed to load sound. Error:%s\n", Mix_GetError());
 	}
 	//Milliseconds needed for an event to occur.
-	const int eventMilliseconds = 17;//17 actually, rounding up from 16.6666 (1000 milliseconds per 60 events.)
+
+
 	uint32_t timer = SDL_GetTicks();
+
+	bool stepsOn = false;
 	//Do this to keep the screen up.
 	while(!quit){
 		//Parse inputs
@@ -69,6 +83,9 @@ int startMachine(char* ROM){
 			}
 			if(e.type == SDL_KEYUP){
 				removeInput(e.key.keysym.sym);
+			}
+			if(e.key.keysym.sym == SDLK_p){
+				stepsOn = !stepsOn;
 			}
 		}	
 		//Check the sound.
@@ -90,7 +107,7 @@ int startMachine(char* ROM){
 
 	}
 	deleteScreen();
-
+	freeMemory();
     Mix_FreeChunk(sound);
     sound = NULL;
 
@@ -104,12 +121,5 @@ int main(int argc, char** argv){
 		return 1;
 	}
 	startMachine(argv[1]);
-	/*initMemory();
-	//Load in a test rom.
-	int flag = loadFile("testROM.txt");
-	if(flag == -1){
-		return 1;
-	}*/
-
 	return 0;
 }

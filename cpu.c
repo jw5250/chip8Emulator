@@ -26,7 +26,6 @@ static int registerStorage;
 //Stores the most recent key input into the cpu.
 static byte keyStorage;
 
-
 void initCpu(){
 	awaitKeyboardInput = false;
 	keyStorage = EMPTY_KEY;
@@ -129,10 +128,12 @@ static inline void lsh(int reg1, int reg2){
 static inline void jmp(word nextInstr){
 	cpu.pc.WORD = nextInstr.WORD & 0x0fff;
 }
+
 //BNNN
 static inline void jmpOff(word w1){
 	cpu.pc.WORD = cpu.reg[0x0] + (w1.WORD & 0x0fff);
 }
+
 //ANNN
 static inline void setIndex(word w1){
 	cpu.i.BYTE.UPPER = w1.BYTE.UPPER;
@@ -229,14 +230,14 @@ static inline void draw(int regX, int regY, int nBytes){
 		int j = 0;
 		byte b = readMemory(cpu.i.WORD + i);
 		//If I wanted to remove screen clipping, just need to comment out the "% [dimension]" part.
-		byte ver = (verOr + i) /*% SCRNHEIGHT*/;
+		byte ver = (verOr + i) % SCRNHEIGHT;
 
 		if(ver >= SCRNHEIGHT){
 			//If ver is greater than or equal to the frame buffer at any point, stop drawing.
 			break;
 		}
 		while(j < BYTE_LEN_IN_BITS){
-			byte hor = (horOr + j) /*% SCRNLEN*/;
+			byte hor = (horOr + j) % SCRNLEN;
 
 			if(hor >= SCRNLEN){
 				break;
@@ -323,6 +324,7 @@ static inline void loadReg(int reg1){
 	for(int j = 0; j <= reg1;j++){
 		cpu.reg[j] = readMemory(addrBuffer.WORD);
 		addrBuffer.WORD++;
+		cpu.i.WORD++;
 	}
 }
 
@@ -390,13 +392,9 @@ void cpuLoop(int mostRecentKey){
 
 
 	if(opcode == 0){
-		//call machine code routine
-		//clear screen
 		//return from a subroutine (set to address on stack)
-		//Stack grows down from ROM load point. Is this a bad idea?
 		if( ((firstNibble | secondNibble) | thirdNibble) == 0x00EE){
 			word stackLoc;
-			//printf("Returning\n");	
 			cpu.sp -= 1;
 			cpu.pc.BYTE.LOWER = readMemory(STACKADDR + cpu.sp);
 			cpu.sp -= 1;
