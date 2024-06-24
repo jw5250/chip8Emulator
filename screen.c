@@ -2,11 +2,11 @@
 #include <SDL2/SDL.h>//Audio and sound library.
 
 //Functions exclusive to this file:
-void drawPixel(int x, int y, int n, bool val, SDL_Surface *surf);
+static void drawPixel(int x, int y, int n, bool val, SDL_Surface *surf);
 
-bool frameBuffer[SCRNHEIGHT][SCRNLEN];
+static bool frameBuffer[SCRNHEIGHT][SCRNLEN];
 
-SDL_Window* win = NULL;
+static SDL_Window* win = NULL;
 
 int initScreen(){
 	win = SDL_CreateWindow("Chip8 Screen",
