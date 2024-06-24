@@ -12,10 +12,6 @@ typedef struct{
 	word i;
 	//stack pointer
 	byte sp;
-	//sound timer
-	byte st;
-	//delay timer
-	byte dt;
 	//Program counter. needs to store the 12 bit address code.
 	word pc;
 } chip8reg;
