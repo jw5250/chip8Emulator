@@ -1,4 +1,8 @@
-This emulator was made with chip8 configurations in mind.
+This emulator was made with the following quirks in mind:
+  60hz draw rate (max 60 draws per second)
+  For bitshifting, only X register is used
+  Screen wrapping enabled
+  load, store register instruction increments index register.
 This program was tested on:
 Timendus's test files (https://github.com/Timendus/chip8-test-suite)
 Several files from an octojam chip8 archive (https://github.com/JohnEarnest/chip8Archive)
@@ -8,17 +12,19 @@ Several files from an octojam chip8 archive (https://github.com/JohnEarnest/chip
     glitchGhost.ch8
       Instructions are only read on odd addresses. Why?
     petdog.ch8
-    piper.ch8
     slipperyslope.ch8
     snek.ch8
     RPS.ch8
     br8kout.ch8
     All of the "octojam[number]title.ch8" files except 1.
       NOTE:When looking at the source code, it seems this one is dependent on wrapping being on for the bat to loop correctly
-  Not playable (ROM is semi-playable)
+  Semi-playable (ROM is semi-playable)
     danm8ku.ch8
       Title screen (danm8ku) doesn't display
       Bullets don't exit at the other end of the screen. They just stay there.
+    piper.ch8
+      Waves don't come for some reason.
+      Stutters a lot.
   Completely breaks (ROM is completely unplayable)
 Several chip8 files from this chip8 archive: https://github.com/kripod/chip8-roms/tree/master/games
       Space Invaders
