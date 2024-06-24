@@ -10,10 +10,10 @@ Input diagram (respective to how chip 8 keys are mapped):
 	z x c v           A 0 B F
 */
 
-
+//Keyboard data.
 const SDL_Keycode inputs[TOTAL_INPUTS] = {
-	SDLK_x, SDLK_1, SDLK_2, SDLK_3,
-	SDLK_q, SDLK_w, SDLK_e, SDLK_a,
+    SDLK_x, SDLK_1, SDLK_2, SDLK_3,
+    SDLK_q, SDLK_w, SDLK_e, SDLK_a,
 	SDLK_s, SDLK_d, SDLK_z, SDLK_c,
 	SDLK_4, SDLK_r, SDLK_f, SDLK_v
 };
