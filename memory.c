@@ -7,7 +7,7 @@
 #define FONT_BYTE_LENGTH 80
 
 //memory array will be moved into the memory.c file once I finish testing all of the instructions.
-byte* memory;
+static byte* memory;
 
 	//Data represents 4x5 sprites from 0 to F.
 byte fontData[FONT_BYTE_LENGTH] = {

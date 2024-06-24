@@ -11,7 +11,7 @@ Input diagram (respective to how chip 8 keys are mapped):
 */
 
 //Keyboard data.
-const SDL_Keycode inputs[TOTAL_INPUTS] = {
+static const SDL_Keycode inputs[TOTAL_INPUTS] = {
     SDLK_x, SDLK_1, SDLK_2, SDLK_3,
     SDLK_q, SDLK_w, SDLK_e, SDLK_a,
 	SDLK_s, SDLK_d, SDLK_z, SDLK_c,
@@ -19,7 +19,7 @@ const SDL_Keycode inputs[TOTAL_INPUTS] = {
 };
 
 //Keeps track of which inputs are being held down at the moment.
-bool inputBoard[TOTAL_INPUTS];
+static bool inputBoard[TOTAL_INPUTS];
 
 //Keeps track of the input made during the cycle.
 byte mostRecentPressed;

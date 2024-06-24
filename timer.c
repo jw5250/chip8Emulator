@@ -13,9 +13,9 @@ Separate value here is needed to determine at what time the timer should go.
 
 soundTimer has the same purpose for its respective timer.
 */
-byte delayTimer;
+static byte delayTimer;
 
-byte soundTimer;
+static byte soundTimer;
 
 
 
