@@ -18,6 +18,7 @@
 //inline:Larger executable, but functions declared with it don't need to be pushed onto the stack and popped (alongside result).
 //I could rewrite the giant if else statement into a jump table. Is it worth it though?
 	//I could also rewrite it into a switch statement.
+
 //Stores whether the machine should wait for an input or not.
 static bool awaitKeyboardInput;
 //Stores the register target in case of await input.
@@ -30,6 +31,7 @@ void initCpu(){
 	awaitKeyboardInput = false;
 	keyStorage = EMPTY_KEY;
 	cpu.pc.WORD = STARTADDR;
+	cpu.i.WORD = 0;
 	//Stack size is 96 bytes long. Up to 48 levels of function calls
 	//According to my sources its actually half that but I want to try this first.
 	cpu.sp = 0;
@@ -69,10 +71,8 @@ static inline void xor(int reg1, int reg2){
 //Handles carry flags
 //If reg f would have been modified, its value is overridden by the carry flag.
 static inline void addCarry(int reg1, int reg2){
-	//cpu.reg[0xf] = ((byte)(~(cpu.reg[reg1]))) < (byte)(cpu.reg[reg2]);
 	//Note: If I don't cast these as bytes the operator won't treat the results as such.
 
-	//printf("Registers:%d, %d\n", reg1, reg2);
 	cpu.reg[reg1] += cpu.reg[reg2];
 	//When overflow causes a wrap around, result will always be less than the least valued register.
 	cpu.reg[0xf] = (byte)(cpu.reg[reg1]) < (byte)cpu.reg[reg2];
@@ -86,7 +86,6 @@ static inline void subCarry(int reg1, int reg2){
 
 	cpu.reg[reg1] -= cpu.reg[reg2];
 	cpu.reg[0xf] = (a >= b);
-	//printf("SubCarry\nReg %d:%d\n", reg1, cpu.reg[reg1]);
 }
 
 //8XY7
@@ -96,7 +95,6 @@ static inline void subCarryInvert(int reg1, int reg2){
 
 	cpu.reg[reg1] = cpu.reg[reg2] - cpu.reg[reg1];
 	cpu.reg[0xf] = (a <= b);
-	//printf("SubCarry\nReg %d:%d\n", reg1, cpu.reg[reg1]);
 }
 
 
@@ -120,7 +118,7 @@ static inline void rsh(int reg1, int reg2){
 //If reg f would have been modified, its value is overridden by the carry flag.
 static inline void lsh(int reg1, int reg2){
 	//printf("Left shift register %d before:%d\n", reg1, cpu.reg[reg1]);
-	byte a = ( ((cpu.reg[reg1]) & 0x80) != 0);//This doesn't work.
+	byte a = ( ((cpu.reg[reg1]) & 0x80) != 0);
 	//printf("Overflow flag:%d\n", a);
 	cpu.reg[reg1] = cpu.reg[reg2] << 1;
 	cpu.reg[0xf] = a;
@@ -129,7 +127,6 @@ static inline void lsh(int reg1, int reg2){
 
 //1NNN
 static inline void jmp(word nextInstr){
-	//printf("Jumping to address %x\n", nextInstr.WORD);
 	cpu.pc.WORD = nextInstr.WORD & 0x0fff;
 }
 //BNNN
@@ -138,7 +135,8 @@ static inline void jmpOff(word w1){
 }
 //ANNN
 static inline void setIndex(word w1){
-	//printf("set index\n");
+	cpu.i.BYTE.UPPER = w1.BYTE.UPPER;
+	cpu.i.BYTE.LOWER = w1.BYTE.LOWER;
 	cpu.i.WORD = w1.WORD & (0x0fff);
 }
 
@@ -162,6 +160,7 @@ static inline void getIndexLocation(int reg1){
 //CXNN
 static inline void randomFunction(int reg1, byte b1){
 	//Maybe in future I'll set seed to be more random (seed it based on time.).
+	//
 	cpu.reg[reg1] = rand() & b1;
 }
 
@@ -213,29 +212,32 @@ static inline void bcdEncode(int reg1){
 /*
 	According to chip 8 specifications, there should be horizontal and vertical clipping for sprites.
 	However, sprites' initial draw positions will always be within the range of the screen coordinate limits.
+
 */
 //DXYN
 //Note:
 	//hor and ver don't need to be shorts. I don't remember why I did this. I'll probably change this in the future.
 static inline void draw(int regX, int regY, int nBytes){
-
+	uint32_t startDrawTimer = SDL_GetTicks();
 	int i = 0;
 	byte bitMasks[BYTE_LEN_IN_BITS] = {128, 64, 32, 16, 8, 4, 2, 1};
 	bool collisionOccuredAtSomeTime = false;
 	//Interpret initial coordinates AS screen coordinates
-	unsigned short verOr = cpu.reg[regY] % SCRNHEIGHT;
-	unsigned short horOr = cpu.reg[regX] % SCRNLEN;
+	byte verOr = cpu.reg[regY] % SCRNHEIGHT;
+	byte horOr = cpu.reg[regX] % SCRNLEN;
 	while(i < nBytes){
 		int j = 0;
 		byte b = readMemory(cpu.i.WORD + i);
-		unsigned short ver = (verOr + i) /*% SCRNHEIGHT*/;
+		//If I wanted to remove screen clipping, just need to comment out the "% [dimension]" part.
+		byte ver = (verOr + i) /*% SCRNHEIGHT*/;
+
 		if(ver >= SCRNHEIGHT){
 			//If ver is greater than or equal to the frame buffer at any point, stop drawing.
 			break;
 		}
-		//printf("Value read:%x\n", b);
 		while(j < BYTE_LEN_IN_BITS){
-			unsigned short hor = (horOr + j) /*% SCRNLEN*/;
+			byte hor = (horOr + j) /*% SCRNLEN*/;
+
 			if(hor >= SCRNLEN){
 				break;
 			}
@@ -244,15 +246,21 @@ static inline void draw(int regX, int regY, int nBytes){
 			if(updatePixelInFrameBuffer(hor, ver, ((b & bitMasks[j]) != 0) ) == true){
 				collisionOccuredAtSomeTime = true;
 			}
-			j++;
+			j++;//Set up next pixel.
 		}
-		i++;
+		i++;//Set up next pixel.
 	}
 	cpu.reg[0xF] = collisionOccuredAtSomeTime;
+	//Wait some 16.66 milliseconds at least.
+	const int wait = 17;
+	uint32_t timerStart = SDL_GetTicks();
+	uint32_t diff = timerStart - startDrawTimer;
+	if(diff < wait){
+		int waitTime = wait-diff;
+		uint32_t waitTimeStart = SDL_GetTicks();
+		while(SDL_GetTicks()-waitTimeStart < waitTime){}
+	}
 	updateScreen();
-	//printf("Finished drawing sprite.\n");
-	//sleep(5);
-	//Make the program wait to draw. Why is the octojam4 thing breaking?
 }
 
 
@@ -269,7 +277,6 @@ static inline void setDTimerValue(int reg1){
 }
 //Set the sound timer value(FX18)
 static inline void setSTimerValue(int reg1){
-	//printf("Setting sound timer value in register %d to: %d\n", reg1, cpu.reg[reg1]);
 	setSoundTimer(cpu.reg[reg1]);
 }
 
@@ -349,10 +356,6 @@ static inline void shiftOperations(int reg1, int reg2, int id){
 }
 
 void cpuLoop(int mostRecentKey){
-	//Issue:
-		//Needs to store the key value, then wait until the key is released.
-	//Issue: how do we know when the program ends?
-		//Assume it loops infinitely at the end. Hopefully.	
 	if(awaitKeyboardInput == true){
 		if( (mostRecentKey != EMPTY_KEY) && (keyStorage == EMPTY_KEY)){
 			cpu.reg[registerStorage] = mostRecentKey;
