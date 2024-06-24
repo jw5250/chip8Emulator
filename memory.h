@@ -19,8 +19,10 @@ TODO:
 
 
 int initMemory();
+void freeMemory();
 int memoryExists();
 byte readMemory(register int address);
 void writeMemory(register word address, register byte value);
+
 #endif
 

@@ -44,6 +44,11 @@ int initMemory(){
 	return memory != NULL;
 }
 
+void freeMemory(){
+	free(memory);
+	memory = NULL;
+}
+
 int memoryExists(){
 	return memory != NULL;
 }
