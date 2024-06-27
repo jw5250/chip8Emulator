@@ -6,34 +6,35 @@ This emulator was made with the following quirks in mind:
 This program was tested on:
 Timendus's test files (https://github.com/Timendus/chip8-test-suite)
 Several files from an octojam chip8 archive (https://github.com/JohnEarnest/chip8Archive)
-  ROMS with no issues (as of current testing):
+  ROMS with no issues
     down8.ch8
       Requires wrapping for the intro cutscene to play properly.
     glitchGhost.ch8
-      Instructions are only read on odd addresses. Why?
+      Playable with and without uncapped framerates
     petdog.ch8
     slipperyslope.ch8
+      Speed of the player during the level transitions is dependent on framerate speeds.
     snek.ch8
+      Speed dependent on framerate speed.
     RPS.ch8
+      Requires the draw rate be capped at 60 to be completely playable. (cutscene plays too fast otherwise.)
     br8kout.ch8
+      Playable with or without capped framerates.
     All of the "octojam[number]title.ch8" files except 1.
-      NOTE:When looking at the source code, it seems this one is dependent on wrapping being on for the bat to loop correctly
+      1 only works properly if wrapping for this emulator is on.
+    piper.ch8
+      Playable if the draw rate is uncapped. Otherwise stutters a lot and the waves take much longer to come.
   Semi-playable (ROM is semi-playable)
     danm8ku.ch8
-      Title screen (danm8ku) doesn't display
+      This game is not playable with a max 60 frame rate. Once the second wave of bullets comes on it chugs super hard.
       Bullets don't exit at the other end of the screen. They just stay there.
-    piper.ch8
-      Waves don't come for some reason.
-      Stutters a lot.
   Completely breaks (ROM is completely unplayable)
 Several chip8 files from this chip8 archive: https://github.com/kripod/chip8-roms/tree/master/games
       Space Invaders
         Not entirely sure if this one works properly.
       Tetris
-        Playable, but doesn't have much features.
+        Playable.
       Pong (1 player)
         Playable.
-      Breakout (1979, Carmelo Cortez)
-        Kind of works, but am not sure if the walls are supposed to regenerate.
       Breakout (David Winter)
-        Use this one. The other breakout is janky
+        Breakout game that works.
